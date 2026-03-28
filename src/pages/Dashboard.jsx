@@ -138,7 +138,7 @@ export default function Dashboard() {
         Overview of revenue and performance
       </p>
 
-<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+<div className="grid grid-cols-5 md:grid-cols-2 lg:grid-cols-5 gap-6">
   <KPICard
     title="Total Students"
     value={kpi.students}
@@ -185,7 +185,7 @@ export default function Dashboard() {
       </div>
 
       {/* Insights */}
-      <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="mt-6 grid grid-cols-3 md:grid-cols-3 gap-6">
 
         <div className="bg-white/80 backdrop-blur-md p-5 rounded-2xl border shadow-sm">
           <p className="text-sm text-gray-500">Best Day</p>
