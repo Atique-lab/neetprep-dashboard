@@ -8,8 +8,10 @@ export default function Sidebar() {
     { name: "Revenue", path: "/revenue" },
     { name: "Managers", path: "/managers" },
     { name: "Centres", path: "/centres" },
+    { name: "Courses", path: "/courses" },
     { name: "Payments", path: "/payments" },
     { name: "Students", path: "/students" },
+      
   ];
 
   return (

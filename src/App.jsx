@@ -8,6 +8,7 @@ import Centres from "./pages/Centres";
 import Payments from "./pages/Payments";
 import Students from "./pages/Students";
 
+
 export default function App() {
   return (
     <Routes>

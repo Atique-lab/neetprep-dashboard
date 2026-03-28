@@ -9,13 +9,13 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-export default function Centres() {
-  const [centres, setCentres] = useState([]);
+export default function Courses() {
+  const [courses, setCourses] = useState([]);
   const [kpi, setKpi] = useState({
-    total: 0,
-    top: "",
+    totalCourses: 0,
+    topCourse: "",
     topRevenue: 0,
-    avg: 0,
+    avgRevenue: 0,
   });
 
   useEffect(() => {
@@ -23,43 +23,51 @@ export default function Centres() {
       const rows = await fetchSheetData();
 
       const processed = rows.slice(1).map((row) => ({
-        centre: row[6],
-        revenue: Number(row[20]),
+        course: row[7],              // Column H
+        revenue: Number(row[20]),    // Column U (Neetprep Share)
       }));
 
-      const centreMap = {};
+      // 🔹 Group by course
+      const courseMap = {};
 
       processed.forEach((d) => {
-        if (!d.centre) return;
+        if (!d.course) return;
 
-        if (!centreMap[d.centre]) {
-          centreMap[d.centre] = 0;
+        if (!courseMap[d.course]) {
+          courseMap[d.course] = 0;
         }
 
-        centreMap[d.centre] += d.revenue || 0;
+        courseMap[d.course] += d.revenue || 0;
       });
 
-      const centreData = Object.keys(centreMap)
+      // 🔹 Convert + sort
+      const courseData = Object.keys(courseMap)
         .map((name) => ({
           name,
-          revenue: centreMap[name],
+          revenue: courseMap[name],
         }))
         .sort((a, b) => b.revenue - a.revenue);
 
-      // KPIs
-      const total = centreData.length;
-      const top = centreData[0]?.name || "-";
-      const topRevenue = centreData[0]?.revenue || 0;
+      // 🔹 KPIs
+      const totalCourses = courseData.length;
+      const topCourse = courseData[0]?.name || "-";
+      const topRevenue = courseData[0]?.revenue || 0;
 
-      const totalRevenue = centreData.reduce(
+      const totalRevenue = courseData.reduce(
         (sum, c) => sum + c.revenue,
         0
       );
 
-      const avg = total > 0 ? totalRevenue / total : 0;
+      const avgRevenue =
+        totalCourses > 0 ? totalRevenue / totalCourses : 0;
 
-      setCentres(centreData);
-      setKpi({ total, top, topRevenue, avg });
+      setCourses(courseData);
+      setKpi({
+        totalCourses,
+        topCourse,
+        topRevenue,
+        avgRevenue,
+      });
     }
 
     loadData();
@@ -68,19 +76,19 @@ export default function Centres() {
   return (
     <>
       <h1 className="text-2xl font-semibold text-gray-800 mb-6">
-        Centres Analytics
+        Course Analytics
       </h1>
 
       {/* 🔹 KPI Cards */}
       <div className="grid grid-cols-4 gap-4 mb-6">
         <div className="bg-white p-4 rounded-xl shadow border">
-          <p className="text-gray-500 text-sm">Total Centres</p>
-          <h2 className="text-xl font-bold">{kpi.total}</h2>
+          <p className="text-gray-500 text-sm">Total Courses</p>
+          <h2 className="text-xl font-bold">{kpi.totalCourses}</h2>
         </div>
 
         <div className="bg-white p-4 rounded-xl shadow border">
-          <p className="text-gray-500 text-sm">Top Centre</p>
-          <h2 className="text-sm font-semibold">{kpi.top}</h2>
+          <p className="text-gray-500 text-sm">Top Course</p>
+          <h2 className="text-sm font-semibold">{kpi.topCourse}</h2>
         </div>
 
         <div className="bg-white p-4 rounded-xl shadow border">
@@ -93,7 +101,7 @@ export default function Centres() {
         <div className="bg-white p-4 rounded-xl shadow border">
           <p className="text-gray-500 text-sm">Avg Revenue</p>
           <h2 className="text-xl font-bold text-blue-600">
-            ₹{Math.round(kpi.avg).toLocaleString()}
+            ₹{Math.round(kpi.avgRevenue).toLocaleString()}
           </h2>
         </div>
       </div>
@@ -103,31 +111,31 @@ export default function Centres() {
         {/* 🔹 Chart */}
         <div className="bg-white p-6 rounded-2xl shadow border">
           <h2 className="text-lg font-semibold mb-4">
-            Revenue by Centre
+            Revenue by Course
           </h2>
 
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={centres.slice(0, 6)}>
+            <BarChart data={courses.slice(0, 6)}>
               <XAxis dataKey="name" hide />
               <YAxis />
               <Tooltip />
               <Bar
                 dataKey="revenue"
-                fill="#06b6d4"
+                fill="#6366f1"
                 radius={[6, 6, 0, 0]}
               />
             </BarChart>
           </ResponsiveContainer>
         </div>
 
-        {/* 🔹 List */}
+        {/* 🔹 Top Courses List */}
         <div className="bg-white p-6 rounded-2xl shadow border">
           <h2 className="text-lg font-semibold mb-4">
-            Top Centres
+            Top Courses
           </h2>
 
           <div className="space-y-3 max-h-[300px] overflow-y-auto">
-            {centres.map((c) => (
+            {courses.map((c) => (
               <div
                 key={c.name}
                 className="flex justify-between items-center bg-gray-50 px-4 py-3 rounded-xl"
@@ -136,7 +144,7 @@ export default function Centres() {
                   {c.name}
                 </span>
 
-                <span className="font-semibold text-blue-600">
+                <span className="font-semibold text-indigo-600">
                   ₹{c.revenue.toLocaleString()}
                 </span>
               </div>
@@ -144,18 +152,6 @@ export default function Centres() {
           </div>
         </div>
 
-      </div>
-
-      {/* 🔥 SMART INSIGHTS */}
-      <div className="mt-6 bg-white p-5 rounded-xl border shadow">
-        <h2 className="text-lg font-semibold mb-2">
-          Insights
-        </h2>
-
-        <p className="text-gray-600 text-sm">
-           Best Performing Centre: <b>{kpi.top}</b><br />
-           Average Revenue per Centre: ₹{Math.round(kpi.avg).toLocaleString()}
-        </p>
       </div>
     </>
   );
