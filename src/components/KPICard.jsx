@@ -15,11 +15,11 @@ export default function KPICard({ title, value, icon, color }) {
       animate={{ opacity: 1, y: 0 }}
       whileHover={{ scale: 1.05 }}
       transition={{ duration: 0.3 }}
-      className="relative rounded-2xl bg-[#0F172A] p-6 border border-white/10 overflow-hidden aspect-square flex items-center justify-center"
+      className="relative rounded-2xl bg-white p-6 border border-gray-200 shadow-sm overflow-hidden aspect-square flex items-center justify-center"
     >
-      {/* Glow Border */}
+      {/* Soft Glow */}
       <div
-        className={`absolute inset-0 rounded-2xl bg-gradient-to-r ${colorMap[color]} opacity-20 blur-xl`}
+        className={`absolute inset-0 rounded-2xl bg-gradient-to-r ${colorMap[color]} opacity-10 blur-xl`}
       />
 
       {/* Content */}
@@ -33,12 +33,12 @@ export default function KPICard({ title, value, icon, color }) {
         </div>
 
         {/* Value */}
-        <h2 className="text-2xl font-bold text-white">
+        <h2 className="text-2xl font-bold text-gray-900">
           {value}
         </h2>
 
         {/* Title */}
-        <p className="text-gray-400 text-sm">
+        <p className="text-gray-500 text-sm">
           {title}
         </p>
       </div>
