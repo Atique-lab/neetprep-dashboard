@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   AreaChart,
   Area,
@@ -6,44 +6,17 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { fetchSheetData } from "../services/sheetApi";
 
-export default function RevenueChart() {
-  const [monthlyData, setMonthlyData] = useState([]);
+export default function RevenueChart({ monthlyData, rawData }) {
   const [dailyData, setDailyData] = useState([]);
   const [viewMode, setViewMode] = useState("monthly");
   const [selectedMonth, setSelectedMonth] = useState("");
 
-  useEffect(() => {
-    async function loadData() {
-      const rows = await fetchSheetData();
-
-      const raw = rows.slice(1).map((row) => ({
-        date: row[1],
-        revenue: Number(row[11]),
-      }));
-
-      // 🔥 Monthly aggregation
-      const monthMap = {};
-      raw.forEach((d) => {
-        if (!d.date || !d.revenue) return;
-
-        const month = d.date.split("-")[1];
-
-        if (!monthMap[month]) monthMap[month] = 0;
-        monthMap[month] += d.revenue;
-      });
-
-      const monthArr = Object.keys(monthMap).map((m) => ({
-        month: m,
-        revenue: monthMap[m],
-      }));
-
-      setMonthlyData(monthArr);
-    }
-
-    loadData();
-  }, []);
+  const parseNumber = (val) => {
+    if (!val) return 0;
+    if (typeof val === 'number') return val;
+    return Number(val.replace(/,/g, "")) || 0;
+  };
 
   // 🔥 Handle click
   const handleClick = (data) => {
@@ -52,23 +25,21 @@ export default function RevenueChart() {
     const month = data.activePayload[0].payload.month;
     setSelectedMonth(month);
 
-    // Filter daily data
-    fetchSheetData().then((rows) => {
-      const raw = rows.slice(1).map((row) => ({
-        date: row[1],
-        revenue: Number(row[11]),
+    // Filter daily data from the passed rawData prop
+    const raw = rawData.slice(1).map((row) => ({
+      date: row[1],
+      revenue: parseNumber(row[11]),
+    }));
+
+    const filtered = raw
+      .filter((d) => d.date?.includes(month))
+      .map((d) => ({
+        day: d.date,
+        revenue: d.revenue,
       }));
 
-      const filtered = raw
-        .filter((d) => d.date?.includes(month))
-        .map((d) => ({
-          day: d.date,
-          revenue: d.revenue,
-        }));
-
-      setDailyData(filtered);
-      setViewMode("daily");
-    });
+    setDailyData(filtered);
+    setViewMode("daily");
   };
 
   return (
@@ -103,7 +74,9 @@ export default function RevenueChart() {
           </defs>
 
           <XAxis dataKey={viewMode === "monthly" ? "month" : "day"} />
-          <Tooltip />
+          <Tooltip 
+            formatter={(value) => [`₹${value.toLocaleString()}`, "Revenue"]}
+          />
 
           <Area
             type="monotone"
