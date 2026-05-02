@@ -64,17 +64,6 @@ export default function Sidebar() {
           );
         })}
       </div>
-
-      {/* Bottom Section */}
-      <div className="p-6 relative z-10 mt-auto">
-        <div className="bg-gradient-to-br from-purple-100 to-indigo-50 p-4 rounded-2xl border border-purple-100 shadow-sm">
-          <p className="text-sm font-semibold text-purple-900">Pro Plan</p>
-          <p className="text-xs text-purple-600 mt-1 mb-3">Get all features</p>
-          <button className="w-full py-2 bg-white text-purple-700 text-xs font-bold rounded-xl shadow-sm hover:shadow transition-shadow">
-            Upgrade
-          </button>
-        </div>
-      </div>
     </div>
   );
 }

@@ -4,6 +4,9 @@ const BASE_SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSkGqJLI
 
 async function fetchCSVData(gid) {
   const res = await fetch(`${BASE_SHEET_URL}?gid=${gid}&single=true&output=csv`);
+  if (!res.ok) {
+    throw new Error(`HTTP error! status: ${res.status}`);
+  }
   const text = await res.text();
 
   return new Promise((resolve, reject) => {
@@ -23,9 +26,19 @@ export async function fetchSheetData() {
 }
 
 export async function fetchNewCentreShare() {
-  return fetchCSVData("137526139"); // New Centre Share
+  try {
+    return await fetchCSVData("137526139"); // New Centre Share
+  } catch (error) {
+    console.warn("Could not load New Centre Share data:", error);
+    return [];
+  }
 }
 
 export async function fetchLastSessionEnrolments() {
-  return fetchCSVData("971410532"); // Last Session Enrolments
+  try {
+    return await fetchCSVData("971410532"); // Last Session Enrolments
+  } catch (error) {
+    console.warn("Could not load Last Session Enrolments data:", error);
+    return [];
+  }
 }
