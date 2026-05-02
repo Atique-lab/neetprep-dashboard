@@ -3,8 +3,8 @@ import { motion } from "framer-motion";
 export default function KPICard({ title, value, icon, color }) {
   const colorMap = {
     orange: "from-orange-400 to-pink-500",
-    purple: "from-purple-400 to-indigo-500",
-    green: "from-green-400 to-teal-500",
+    purple: "from-purple-500 to-indigo-600",
+    green: "from-emerald-400 to-teal-500",
     blue: "from-blue-400 to-cyan-500",
     pink: "from-pink-400 to-rose-500",
   };
@@ -13,32 +13,30 @@ export default function KPICard({ title, value, icon, color }) {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      whileHover={{ scale: 1.05 }}
+      whileHover={{ y: -5, scale: 1.02 }}
       transition={{ duration: 0.3 }}
-      className="relative rounded-2xl bg-white p-6 border border-gray-200 shadow-sm overflow-hidden aspect-square flex items-center justify-center"
+      className="relative rounded-[2rem] glass p-6 overflow-hidden flex flex-col justify-between group"
     >
-      {/* Soft Glow */}
+      {/* Soft Ambient Glow */}
       <div
-        className={`absolute inset-0 rounded-2xl bg-gradient-to-r ${colorMap[color]} opacity-10 blur-xl`}
+        className={`absolute -right-6 -top-6 w-32 h-32 rounded-full bg-gradient-to-br ${colorMap[color]} opacity-20 blur-3xl group-hover:opacity-40 transition-opacity duration-500`}
       />
 
-      {/* Content */}
-      <div className="relative z-10 flex flex-col items-center justify-center text-center gap-4">
-
-        {/* Icon */}
+      {/* Header */}
+      <div className="flex justify-between items-start mb-6 relative z-10">
         <div
-          className={`w-12 h-12 rounded-xl bg-gradient-to-r ${colorMap[color]} flex items-center justify-center text-white text-xl`}
+          className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${colorMap[color]} flex items-center justify-center text-white text-xl shadow-lg group-hover:shadow-xl transition-shadow duration-300`}
         >
           {icon}
         </div>
+      </div>
 
-        {/* Value */}
-        <h2 className="text-2xl font-bold text-gray-900">
+      {/* Content */}
+      <div className="relative z-10">
+        <h2 className="text-3xl font-bold text-slate-800 tracking-tight">
           {value}
         </h2>
-
-        {/* Title */}
-        <p className="text-gray-500 text-sm">
+        <p className="text-slate-500 text-sm font-medium mt-1">
           {title}
         </p>
       </div>

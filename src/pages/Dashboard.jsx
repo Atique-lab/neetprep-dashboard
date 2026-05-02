@@ -9,28 +9,30 @@ export default function Dashboard() {
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center h-64 text-red-500">
-        <AlertCircle size={48} className="mb-4" />
-        <h2 className="text-xl font-semibold">Failed to load dashboard</h2>
-        <p>{error}</p>
+      <div className="flex flex-col items-center justify-center h-[60vh] text-red-500 glass rounded-3xl m-2">
+        <AlertCircle size={64} className="mb-4 opacity-80" />
+        <h2 className="text-2xl font-semibold mb-2">Failed to load dashboard</h2>
+        <p className="text-red-400">{error}</p>
       </div>
     );
   }
 
   if (loading) {
     return (
-      <div className="animate-pulse">
-        <div className="h-8 bg-gray-200 rounded w-1/4 mb-2"></div>
-        <div className="h-4 bg-gray-200 rounded w-1/3 mb-6"></div>
-        <div className="grid grid-cols-5 md:grid-cols-2 lg:grid-cols-5 gap-6">
+      <div className="animate-pulse space-y-6">
+        <div>
+          <div className="h-8 bg-slate-200/50 rounded-lg w-1/4 mb-2"></div>
+          <div className="h-4 bg-slate-200/50 rounded-lg w-1/3 mb-8"></div>
+        </div>
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-6">
           {[...Array(5)].map((_, i) => (
-            <div key={i} className="bg-gray-100 rounded-2xl h-32 w-full"></div>
+            <div key={i} className="glass rounded-[2rem] h-40 w-full"></div>
           ))}
         </div>
-        <div className="mt-6 bg-gray-100 rounded-2xl h-80 w-full"></div>
-        <div className="mt-6 grid grid-cols-3 md:grid-cols-3 gap-6">
+        <div className="glass rounded-[2rem] h-96 w-full mt-6"></div>
+        <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
           {[...Array(3)].map((_, i) => (
-            <div key={i} className="bg-gray-100 rounded-2xl h-24 w-full"></div>
+            <div key={i} className="glass rounded-[2rem] h-32 w-full"></div>
           ))}
         </div>
       </div>
@@ -41,17 +43,20 @@ export default function Dashboard() {
     <motion.div
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
+      transition={{ duration: 0.5, ease: "easeOut" }}
+      className="space-y-8"
     >
       {/* Title */}
-      <h1 className="text-2xl font-semibold text-gray-800">
-        Dashboard
-      </h1>
-      <p className="text-gray-500 text-sm mb-6">
-        Overview of revenue and performance
-      </p>
+      <div>
+        <h1 className="text-3xl font-bold text-slate-800 tracking-tight">
+          Dashboard Overview
+        </h1>
+        <p className="text-slate-500 text-sm mt-1">
+          Monitor your revenue, performance, and key metrics in real-time.
+        </p>
+      </div>
 
-      <div className="grid grid-cols-5 md:grid-cols-2 lg:grid-cols-5 gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 md:gap-6">
         <KPICard
           title="Total Students"
           value={kpi.students}
@@ -89,58 +94,70 @@ export default function Dashboard() {
       </div>
 
       {/* Chart */}
-      <div className="mt-6 bg-white/80 backdrop-blur-md p-5 rounded-2xl border shadow-sm hover:shadow-md transition">
-        <h2 className="text-lg font-semibold mb-4">
-          Monthly Revenue
-        </h2>
+      <div className="glass p-6 md:p-8 rounded-[2rem] transition-all hover:shadow-lg hover:shadow-purple-500/5 group">
         <RevenueChart monthlyData={monthlyData} rawData={rawData} />
       </div>
 
       {/* Insights */}
-      <div className="mt-6 grid grid-cols-3 md:grid-cols-3 gap-6">
-        <div className="bg-white/80 backdrop-blur-md p-5 rounded-2xl border shadow-sm hover:shadow-md transition">
-          <p className="text-sm text-gray-500">Best Day</p>
-          <h2 className="text-lg font-semibold text-green-600">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="glass p-6 md:p-8 rounded-[2rem] relative overflow-hidden group hover:-translate-y-1 transition-transform duration-300">
+          <div className="absolute -right-6 -top-6 w-32 h-32 bg-green-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
+          <p className="text-sm text-slate-500 font-medium mb-1">Best Day</p>
+          <h2 className="text-2xl font-bold text-green-600 mb-1">
             {insights.bestDay}
           </h2>
-          <p className="text-sm text-gray-600">
+          <p className="text-sm font-medium text-slate-600">
             ₹{insights.bestRevenue.toLocaleString()}
           </p>
         </div>
 
-        <div className="bg-white/80 backdrop-blur-md p-5 rounded-2xl border shadow-sm hover:shadow-md transition">
-          <p className="text-sm text-gray-500">Lowest Day</p>
-          <h2 className="text-lg font-semibold text-red-500">
+        <div className="glass p-6 md:p-8 rounded-[2rem] relative overflow-hidden group hover:-translate-y-1 transition-transform duration-300">
+          <div className="absolute -right-6 -top-6 w-32 h-32 bg-rose-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
+          <p className="text-sm text-slate-500 font-medium mb-1">Lowest Day</p>
+          <h2 className="text-2xl font-bold text-rose-500 mb-1">
             {insights.worstDay}
           </h2>
-          <p className="text-sm text-gray-600">
+          <p className="text-sm font-medium text-slate-600">
             ₹{insights.worstRevenue.toLocaleString()}
           </p>
         </div>
 
-        <div className="bg-white/80 backdrop-blur-md p-5 rounded-2xl border shadow-sm hover:shadow-md transition">
-          <p className="text-sm text-gray-500">Avg Daily Revenue</p>
-          <h2 className="text-lg font-semibold text-blue-600">
+        <div className="glass p-6 md:p-8 rounded-[2rem] relative overflow-hidden group hover:-translate-y-1 transition-transform duration-300">
+          <div className="absolute -right-6 -top-6 w-32 h-32 bg-blue-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
+          <p className="text-sm text-slate-500 font-medium mb-1">Avg Daily Revenue</p>
+          <h2 className="text-3xl font-bold text-blue-600">
             ₹{Math.round(insights.avg).toLocaleString()}
           </h2>
         </div>
       </div>
 
       {/* Alerts */}
-      <div className="mt-6 bg-white/80 backdrop-blur-md p-5 rounded-2xl border shadow-sm">
-        <h2 className="text-lg font-semibold mb-2">Alerts</h2>
+      <div className="glass p-6 md:p-8 rounded-[2rem]">
+        <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+          <AlertCircle className="text-purple-500" size={24} />
+          Intelligent Alerts
+        </h2>
 
-        <div className="text-sm text-gray-600 space-y-1">
+        <div className="space-y-3">
           {insights.bestRevenue > insights.avg * 1.5 && (
-            <p className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-green-500"></span> High revenue spike detected on {insights.bestDay}</p>
+            <div className="flex items-center gap-3 p-4 bg-green-50/50 rounded-xl border border-green-100">
+              <span className="w-2.5 h-2.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]"></span> 
+              <p className="text-sm font-medium text-green-800">High revenue spike detected on {insights.bestDay}</p>
+            </div>
           )}
 
           {insights.worstRevenue > 0 && insights.worstRevenue < insights.avg * 0.5 && (
-            <p className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-orange-500"></span> Low performance detected on {insights.worstDay}</p>
+            <div className="flex items-center gap-3 p-4 bg-orange-50/50 rounded-xl border border-orange-100">
+              <span className="w-2.5 h-2.5 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.6)]"></span> 
+              <p className="text-sm font-medium text-orange-800">Low performance detected on {insights.worstDay}</p>
+            </div>
           )}
 
           {insights.avg === 0 && (
-            <p className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-red-500"></span> No revenue data available</p>
+            <div className="flex items-center gap-3 p-4 bg-rose-50/50 rounded-xl border border-rose-100">
+              <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)]"></span> 
+              <p className="text-sm font-medium text-rose-800">No revenue data available for analysis</p>
+            </div>
           )}
         </div>
       </div>

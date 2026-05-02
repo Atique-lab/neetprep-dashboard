@@ -4,11 +4,14 @@ import { BrowserRouter } from "react-router-dom";
 import App from "./App";
 import "./index.css";
 import { DashboardProvider } from "./context/DashboardContext";
+import { AuthProvider } from "./context/AuthContext";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
-  <DashboardProvider>
-    <BrowserRouter>
-      <App />
-    </BrowserRouter>
-  </DashboardProvider>
+  <BrowserRouter>
+    <AuthProvider>
+      <DashboardProvider>
+        <App />
+      </DashboardProvider>
+    </AuthProvider>
+  </BrowserRouter>
 );

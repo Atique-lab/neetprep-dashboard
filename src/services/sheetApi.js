@@ -1,7 +1,9 @@
 import Papa from "papaparse";
 
-export async function fetchSheetData() {
-  const res = await fetch("https://docs.google.com/spreadsheets/d/e/2PACX-1vSkGqJLIizoOHfge9CDRXIBnFv7e-7his-hAJ539cyvNRP0LewpFYHJsCqzvT_YsErACR9y6rj8uSPM/pub?gid=0&single=true&output=csv");
+const BASE_SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSkGqJLIizoOHfge9CDRXIBnFv7e-7his-hAJ539cyvNRP0LewpFYHJsCqzvT_YsErACR9y6rj8uSPM/pub";
+
+async function fetchCSVData(gid) {
+  const res = await fetch(`${BASE_SHEET_URL}?gid=${gid}&single=true&output=csv`);
   const text = await res.text();
 
   return new Promise((resolve, reject) => {
@@ -14,4 +16,16 @@ export async function fetchSheetData() {
       }
     });
   });
+}
+
+export async function fetchSheetData() {
+  return fetchCSVData("0"); // Main Data
+}
+
+export async function fetchNewCentreShare() {
+  return fetchCSVData("137526139"); // New Centre Share
+}
+
+export async function fetchLastSessionEnrolments() {
+  return fetchCSVData("971410532"); // Last Session Enrolments
 }

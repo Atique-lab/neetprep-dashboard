@@ -1,10 +1,11 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
-import { fetchSheetData } from '../services/sheetApi';
+import { fetchSheetData, fetchNewCentreShare, fetchLastSessionEnrolments } from '../services/sheetApi';
 
 const DashboardContext = createContext();
 
 export function DashboardProvider({ children }) {
   const [rawData, setRawData] = useState([]);
+  const [extraData, setExtraData] = useState({ newCentreShare: [], lastSession: [] });
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState(null);
@@ -18,8 +19,13 @@ export function DashboardProvider({ children }) {
       } else {
         setLoading(true);
       }
-      const rows = await fetchSheetData();
+      const [rows, newCentreShare, lastSession] = await Promise.all([
+        fetchSheetData(),
+        fetchNewCentreShare(),
+        fetchLastSessionEnrolments()
+      ]);
       setRawData(rows);
+      setExtraData({ newCentreShare, lastSession });
       setLastSynced(new Date());
     } catch (err) {
       console.error("Error fetching sheet data:", err);
@@ -35,20 +41,35 @@ export function DashboardProvider({ children }) {
   }, [loadData]);
 
   const filteredData = useMemo(() => {
-    if (dateRange === "all" || rawData.length <= 1) return rawData;
+    if (rawData.length <= 1) return rawData;
+
+    const userStr = localStorage.getItem('auth_user');
+    const user = userStr ? JSON.parse(userStr) : null;
+    
+    // 1. Role-based filtering
+    let roleFilteredData = rawData.slice(1);
+    if (user && user.role === 'manager') {
+      roleFilteredData = roleFilteredData.filter(row => {
+        // Assuming "Centre Manager" is at index 22 based on the raw data log
+        const managerName = row[22] ? row[22].trim() : '';
+        return managerName.toLowerCase() === user.name.toLowerCase();
+      });
+    }
+
+    if (dateRange === "all") return [rawData[0], ...roleFilteredData];
 
     const header = rawData[0];
     
     // Find the "latest" date in the dataset to act as "Today"
     let latestDate = new Date("1-Jan 2000");
-    rawData.slice(1).forEach(row => {
+    roleFilteredData.forEach(row => {
       if (row[1]) {
         const d = new Date(`${row[1]} 2026`);
         if (!isNaN(d) && d > latestDate) latestDate = d;
       }
     });
 
-    const filtered = rawData.slice(1).filter(row => {
+    const filtered = roleFilteredData.filter(row => {
       if (!row[1]) return false;
       const rowDate = new Date(`${row[1]} 2026`);
       if (isNaN(rowDate)) return true;
@@ -74,6 +95,7 @@ export function DashboardProvider({ children }) {
     <DashboardContext.Provider value={{
       rawData,
       filteredData,
+      extraData,
       loading,
       isRefreshing,
       error,

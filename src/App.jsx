@@ -1,5 +1,7 @@
 import { Routes, Route } from "react-router-dom";
 import Layout from "./components/Layout";
+import Login from "./pages/Login";
+import { useAuth } from "./context/AuthContext";
 
 import Dashboard from "./pages/Dashboard";
 import Revenue from "./pages/Revenue";
@@ -11,13 +13,16 @@ import Payments from "./pages/Payments";
 import Students from "./pages/Students";
 import Courses from "./pages/Courses";
 
-export default function App() {
+function AppRoutes() {
+  const { user } = useAuth();
+
+  if (!user) {
+    return <Login />;
+  }
+
   return (
     <Routes>
-
-      {/* Layout Wrapper */}
       <Route path="/" element={<Layout />}>
-
         <Route index element={<Dashboard />} />
         <Route path="revenue" element={<Revenue />} />
         <Route path="managers" element={<Managers />} />
@@ -27,9 +32,11 @@ export default function App() {
         <Route path="payments" element={<Payments />} />
         <Route path="students" element={<Students />} />
         <Route path="courses" element={<Courses />} />
-
       </Route>
-
     </Routes>
   );
+}
+
+export default function App() {
+  return <AppRoutes />;
 }

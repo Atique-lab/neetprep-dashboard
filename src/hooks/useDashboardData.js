@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useGlobalData } from "../context/DashboardContext";
 
 export function useDashboardData() {
-  const { filteredData, rawData, loading, error } = useGlobalData();
+  const { filteredData, rawData, extraData, loading, error } = useGlobalData();
   const [data, setData] = useState({
     kpi: {
       students: 0,
@@ -129,5 +129,5 @@ export function useDashboardData() {
   }, [filteredData, loading, error]);
 
   // Keep returning rawData so components that need the master dataset still have it
-  return { ...data, rawData, filteredData, loading, error };
+  return { ...data, rawData, filteredData, extraData, loading, error };
 }
