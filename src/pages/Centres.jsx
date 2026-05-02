@@ -107,7 +107,8 @@ export default function Centres() {
     }).sort((a, b) => b.revenue - a.revenue);
 
     const activeCentres = centreData.filter(c => c.revenue > 0);
-    const total = activeCentres.length;
+    // User requested KPI Total to be the total number of centres in New Centres Share
+    const total = Object.keys(newShareMap).length || activeCentres.length;
     const top = activeCentres[0]?.name || "-";
     const topRevenue = activeCentres[0]?.revenue || 0;
     const totalRevenue = activeCentres.reduce((sum, c) => sum + c.revenue, 0);
@@ -210,7 +211,7 @@ export default function Centres() {
       {/* 🔹 KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <div className="glass p-6 rounded-[2rem] hover:-translate-y-1 transition-transform duration-300">
-          <p className="text-slate-500 text-sm font-medium mb-1">Active Centres</p>
+          <p className="text-slate-500 text-sm font-medium mb-1">Total Centres</p>
           <h2 className="text-3xl font-bold text-slate-800">{kpi.total}</h2>
         </div>
         <div className="glass p-6 rounded-[2rem] hover:-translate-y-1 transition-transform duration-300">
@@ -289,17 +290,11 @@ export default function Centres() {
                 <th className="p-4 font-semibold cursor-pointer hover:text-purple-600 transition" onClick={() => requestSort('name')}>
                   Centre Name {renderSortIcon('name')}
                 </th>
-                <th className="p-4 font-semibold text-right cursor-pointer hover:text-purple-600 transition" onClick={() => requestSort('sharePercent')}>
-                  Share % {renderSortIcon('sharePercent')}
+                <th className="p-4 font-semibold text-right cursor-pointer hover:text-purple-600 transition" onClick={() => requestSort('external')}>
+                  Ext Students {renderSortIcon('external')}
                 </th>
-                <th className="p-4 font-semibold text-right cursor-pointer hover:text-purple-600 transition" onClick={() => requestSort('lastYearStudents')}>
-                  Last Year {renderSortIcon('lastYearStudents')}
-                </th>
-                <th className="p-4 font-semibold text-right cursor-pointer hover:text-purple-600 transition" onClick={() => requestSort('students')}>
-                  Students {renderSortIcon('students')}
-                </th>
-                <th className="p-4 font-semibold text-right cursor-pointer hover:text-purple-600 transition" onClick={() => requestSort('studentGrowth')}>
-                  Growth {renderSortIcon('studentGrowth')}
+                <th className="p-4 font-semibold text-right cursor-pointer hover:text-purple-600 transition" onClick={() => requestSort('internal')}>
+                  Int Students {renderSortIcon('internal')}
                 </th>
                 <th className="p-4 font-semibold text-right cursor-pointer hover:text-purple-600 transition" onClick={() => requestSort('revenue')}>
                   Total Revenue {renderSortIcon('revenue')}
@@ -317,18 +312,8 @@ export default function Centres() {
                       {c.name}
                     </Link>
                   </td>
-                  <td className="p-4 text-right font-medium text-slate-600">
-                    {c.sharePercent > 0 ? `${(c.sharePercent * 100).toFixed(0)}%` : '-'}
-                  </td>
-                  <td className="p-4 text-right text-slate-600">{c.lastYearStudents || '-'}</td>
-                  <td className="p-4 text-right font-semibold text-slate-800">{c.students}</td>
-                  <td className="p-4 text-right">
-                    {c.studentGrowth !== 0 ? (
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium ${c.studentGrowth > 0 ? 'bg-green-100 text-green-800' : 'bg-rose-100 text-rose-800'}`}>
-                         {c.studentGrowth > 0 ? '+' : ''}{c.studentGrowth.toFixed(1)}%
-                      </span>
-                    ) : '-'}
-                  </td>
+                  <td className="p-4 text-right text-slate-600">{c.external || 0}</td>
+                  <td className="p-4 text-right text-slate-600">{c.internal || 0}</td>
                   <td className="p-4 text-right font-semibold text-slate-800">
                     ₹{c.revenue.toLocaleString()}
                   </td>
@@ -338,7 +323,7 @@ export default function Centres() {
                 </tr>
               )) : (
                 <tr>
-                  <td colSpan="7" className="p-8 text-center text-slate-500">
+                  <td colSpan="5" className="p-8 text-center text-slate-500">
                     No centres found matching your search.
                   </td>
                 </tr>

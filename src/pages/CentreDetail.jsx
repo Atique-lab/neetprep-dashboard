@@ -7,7 +7,8 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "rec
 export default function CentreDetail() {
   const { id } = useParams();
   const decodedName = decodeURIComponent(id);
-  const { filteredData, loading, error } = useDashboardData();
+  const { filteredData, extraData, loading, error } = useDashboardData();
+  const { newCentreShare, lastSession } = extraData || {};
 
   const parseNumber = (val) => {
     if (!val) return 0;
@@ -20,7 +21,36 @@ export default function CentreDetail() {
 
     const rows = filteredData.slice(1).filter(row => row[6]?.trim() === decodedName);
     
-    if (rows.length === 0) return { notFound: true };
+    // Find share and last session data
+    let sharePercent = 0;
+    if (newCentreShare) {
+      const shareRow = newCentreShare.find(r => r[0]?.trim() === decodedName);
+      if (shareRow) {
+        const shareStr = shareRow[1] || "0";
+        sharePercent = parseFloat(shareStr.replace('%', '')) / 100 || 0;
+      }
+    }
+
+    let lastYearStudents = 0;
+    if (lastSession) {
+      const lastRow = lastSession.find(r => r[0]?.trim() === decodedName);
+      if (lastRow) {
+        lastYearStudents = parseInt(lastRow[4], 10) || 0;
+      }
+    }
+
+    if (rows.length === 0) {
+      // Allow viewing centre even if it has no current rows but has share/last session data
+      if (sharePercent > 0 || lastYearStudents > 0) {
+        return {
+          name: decodedName,
+          totalGross: 0, neetprepShare: 0, centreShare: 0, internal: 0, external: 0,
+          dailyRevenue: [], studentsCount: 0, students: [],
+          sharePercent, lastYearStudents, studentGrowth: -100 // -100% growth if 0 current students
+        };
+      }
+      return { notFound: true };
+    }
 
     let totalGross = 0;
     let neetprepShare = 0;
@@ -65,6 +95,9 @@ export default function CentreDetail() {
       return dA - dB;
     });
 
+    const studentsCount = studentsList.length;
+    const studentGrowth = lastYearStudents > 0 ? ((studentsCount - lastYearStudents) / lastYearStudents) * 100 : 0;
+
     return {
       name: decodedName,
       totalGross,
@@ -73,10 +106,13 @@ export default function CentreDetail() {
       internal,
       external,
       dailyRevenue,
-      studentsCount: studentsList.length,
-      students: studentsList.sort((a, b) => b.amount - a.amount)
+      studentsCount,
+      students: studentsList.sort((a, b) => b.amount - a.amount),
+      sharePercent,
+      lastYearStudents,
+      studentGrowth
     };
-  }, [filteredData, decodedName]);
+  }, [filteredData, extraData, decodedName]);
 
   if (error) {
     return (
@@ -126,7 +162,7 @@ export default function CentreDetail() {
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
         <div className="glass p-6 rounded-[2rem] hover:-translate-y-1 transition-transform duration-300">
           <p className="text-slate-500 text-sm font-medium mb-2 flex items-center gap-2"><CreditCard size={14} /> Gross Revenue</p>
           <h2 className="text-3xl font-bold text-slate-800">₹{centreData.totalGross.toLocaleString()}</h2>
@@ -138,10 +174,18 @@ export default function CentreDetail() {
         <div className="glass p-6 rounded-[2rem] hover:-translate-y-1 transition-transform duration-300">
           <p className="text-blue-500 text-sm font-medium mb-2 flex items-center gap-2"><Wallet size={14} /> Centre Share</p>
           <h2 className="text-3xl font-bold text-blue-600">₹{centreData.centreShare.toLocaleString()}</h2>
+          <p className="text-xs text-slate-400 mt-1">
+            {centreData.sharePercent > 0 ? `(External Share: ${(centreData.sharePercent * 100).toFixed(0)}%)` : 'Share % not found'}
+          </p>
         </div>
         <div className="glass p-6 rounded-[2rem] hover:-translate-y-1 transition-transform duration-300">
           <p className="text-orange-500 text-sm font-medium mb-2 flex items-center gap-2"><Users size={14} /> Total Students</p>
           <h2 className="text-3xl font-bold text-orange-600">{centreData.studentsCount} <span className="text-xs font-normal text-slate-400">({centreData.internal} Int / {centreData.external} Ext)</span></h2>
+          {centreData.lastYearStudents > 0 && (
+             <p className="text-xs text-slate-400 mt-1">
+               Last year: {centreData.lastYearStudents} | Growth: <span className={centreData.studentGrowth > 0 ? "text-green-500" : "text-rose-500"}>{centreData.studentGrowth > 0 ? '+' : ''}{centreData.studentGrowth.toFixed(1)}%</span>
+             </p>
+          )}
         </div>
       </div>
 
