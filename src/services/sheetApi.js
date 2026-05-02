@@ -1,9 +1,10 @@
 import Papa from "papaparse";
 
-const BASE_SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSkGqJLIizoOHfge9CDRXIBnFv7e-7his-hAJ539cyvNRP0LewpFYHJsCqzvT_YsErACR9y6rj8uSPM/pub";
+const DOC_ID = "1DZdiG1uVRUz2W9EtJdhkW7RBwniJhaSSivtJtnihTWU";
+const BASE_SHEET_URL = `https://docs.google.com/spreadsheets/d/${DOC_ID}/export?format=csv`;
 
 async function fetchCSVData(gid) {
-  const res = await fetch(`${BASE_SHEET_URL}?gid=${gid}&single=true&output=csv`);
+  const res = await fetch(`${BASE_SHEET_URL}&gid=${gid}`);
   if (!res.ok) {
     throw new Error(`HTTP error! status: ${res.status}`);
   }

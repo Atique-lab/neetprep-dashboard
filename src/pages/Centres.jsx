@@ -29,7 +29,7 @@ export default function Centres() {
     if (lastSession && lastSession.length > 1) {
         lastSession.slice(1).forEach(row => {
             const name = row[0]?.trim();
-            const count = parseInt(row[1], 10) || 0;
+            const count = parseInt(row[4], 10) || 0; // Index 4 is Grand Total
             if (name) map[name] = count;
         });
     }
@@ -41,7 +41,9 @@ export default function Centres() {
     if (newCentreShare && newCentreShare.length > 1) {
         newCentreShare.slice(1).forEach(row => {
             const name = row[0]?.trim();
-            const share = parseFloat(row[1]) || 0;
+            // Assuming we use External Share for the "Share %" display by default
+            const shareStr = row[1] || "0";
+            const share = parseFloat(shareStr.replace('%', '')) / 100 || 0;
             if (name) map[name] = share;
         });
     }
