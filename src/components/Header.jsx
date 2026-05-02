@@ -1,12 +1,15 @@
 import { useState, useEffect } from "react";
 import { useGlobalData } from "../context/DashboardContext";
 import { useAuth } from "../context/AuthContext";
+import { useDashboardData } from "../hooks/useDashboardData";
 import { RefreshCw, Bell, Search, LogOut } from "lucide-react";
 
 export default function Header() {
   const { dateRange, setDateRange, lastSynced, refreshData, isRefreshing } = useGlobalData();
   const { user, logout } = useAuth();
+  const { notifications } = useDashboardData();
   const [timeAgo, setTimeAgo] = useState("Just now");
+  const [showNotifs, setShowNotifs] = useState(false);
 
   useEffect(() => {
     if (!lastSynced) return;
@@ -68,11 +71,38 @@ export default function Header() {
         </select>
 
         {/* Notifications & Profile & Logout */}
-        <div className="flex items-center gap-3 pl-2 border-l border-gray-300/50">
-          <button className="p-3 glass rounded-full text-slate-600 hover:text-purple-600 transition-colors relative">
+        <div className="flex items-center gap-3 pl-2 border-l border-gray-300/50 relative">
+          <button 
+            onClick={() => setShowNotifs(!showNotifs)}
+            className="p-3 glass rounded-full text-slate-600 hover:text-purple-600 transition-colors relative"
+          >
             <Bell size={18} />
-            <span className="absolute top-2 right-2.5 w-2 h-2 bg-rose-500 rounded-full border-2 border-white"></span>
+            {notifications && notifications.length > 0 && (
+               <span className="absolute top-2 right-2.5 w-2 h-2 bg-rose-500 rounded-full border-2 border-white"></span>
+            )}
           </button>
+          
+          {showNotifs && (
+            <div className="absolute top-14 right-0 md:-right-10 w-80 bg-white/90 backdrop-blur-xl border border-purple-100 rounded-2xl shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-4">
+              <div className="p-4 border-b border-slate-100 bg-slate-50/50">
+                <h3 className="font-bold text-slate-800">Notifications</h3>
+              </div>
+              <div className="max-h-80 overflow-y-auto">
+                {notifications && notifications.length > 0 ? (
+                  notifications.map((notif, idx) => (
+                    <div key={idx} className="p-4 border-b border-slate-50 hover:bg-purple-50/50 transition text-sm text-slate-700">
+                      <span className="inline-block w-2 h-2 bg-purple-500 rounded-full mr-2"></span>
+                      {notif}
+                    </div>
+                  ))
+                ) : (
+                  <div className="p-6 text-center text-slate-500 text-sm">
+                    No new notifications
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
           
           <div className="h-10 w-10 rounded-full bg-gradient-to-tr from-purple-600 to-blue-500 flex items-center justify-center text-white font-bold shadow-md hover:shadow-lg transition-shadow" title={user?.name}>
             {getInitials(user?.name)}

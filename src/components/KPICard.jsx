@@ -32,11 +32,14 @@ export default function KPICard({ title, value, icon, color }) {
       </div>
 
       {/* Content */}
-      <div className="relative z-10">
-        <h2 className="text-3xl font-bold text-slate-800 tracking-tight">
+      <div className="relative z-10 overflow-hidden">
+        <h2 
+          className="text-2xl 2xl:text-3xl font-bold text-slate-800 tracking-tight truncate"
+          title={typeof value === 'string' || typeof value === 'number' ? value : ''}
+        >
           {value}
         </h2>
-        <p className="text-slate-500 text-sm font-medium mt-1">
+        <p className="text-slate-500 text-sm font-medium mt-1 truncate">
           {title}
         </p>
       </div>

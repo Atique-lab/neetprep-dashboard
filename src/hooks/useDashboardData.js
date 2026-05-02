@@ -17,7 +17,11 @@ export function useDashboardData() {
       worstDay: "-",
       worstRevenue: 0,
       avg: 0,
+      topManager: "-",
+      topCourse: "-",
+      topCentre: "-",
     },
+    notifications: [],
     monthlyData: [],
   });
 
@@ -109,6 +113,60 @@ export function useDashboardData() {
     const total = dayData.reduce((sum, d) => sum + d.revenue, 0);
     const avg = dayData.length > 0 ? total / dayData.length : 0;
 
+    // Advanced Insights & Notifications
+    const managerMap = {};
+    const courseMap = {};
+    const centreMap = {};
+    const notifs = [];
+    let zeroPaidStudents = 0;
+
+    const validRows = filteredData.slice(1).filter(r => r[1]);
+    validRows.forEach(row => {
+       const date = row[1];
+       const name = row[2];
+       const course = row[7];
+       const amount = parseNumber(row[11]);
+       const centre = row[6];
+       const manager = row[21];
+       const centreShare = parseNumber(row[17]);
+
+       if (amount === 0) zeroPaidStudents++;
+       if (amount > 0 && centreShare === 0 && centre) {
+         // Cap the specific notifications to avoid spamming
+         if (notifs.length < 20) {
+            notifs.push(`Zero Centre Share for student ${name || 'Unknown'} at ${centre}`);
+         }
+       }
+
+       if (manager) managerMap[manager] = (managerMap[manager] || 0) + amount;
+       if (course) courseMap[course] = (courseMap[course] || 0) + amount;
+       if (centre) centreMap[centre] = (centreMap[centre] || 0) + amount;
+    });
+
+    if (zeroPaidStudents > 0) {
+      notifs.unshift(`Alert: ${zeroPaidStudents} Zero Paid Student(s) detected.`);
+    }
+
+    const today = new Date();
+    const last7Days = Array.from({length: 7}, (_, i) => {
+       const d = new Date();
+       d.setDate(today.getDate() - i);
+       const day = String(d.getDate()).padStart(2, '0');
+       const month = d.toLocaleString('default', { month: 'short' });
+       const year = String(d.getFullYear()).slice(-2);
+       return `${day}-${month}-${year}`;
+    });
+
+    const enrolledDates = new Set(validRows.map(r => r[1]));
+    const zeroEnrolmentDays = last7Days.filter(d => !enrolledDates.has(d));
+    if (zeroEnrolmentDays.length > 0 && zeroEnrolmentDays.length < 7) {
+      notifs.unshift(`Warning: Zero Enrolment on ${zeroEnrolmentDays.join(', ')}`);
+    }
+
+    const topManager = Object.keys(managerMap).sort((a,b) => managerMap[b] - managerMap[a])[0] || "-";
+    const topCourse = Object.keys(courseMap).sort((a,b) => courseMap[b] - courseMap[a])[0] || "-";
+    const topCentre = Object.keys(centreMap).sort((a,b) => centreMap[b] - centreMap[a])[0] || "-";
+
     setData({
       kpi: {
         students: processed.length,
@@ -123,7 +181,11 @@ export function useDashboardData() {
         worstDay: worstDay?.date || "-",
         worstRevenue: worstDay?.revenue || 0,
         avg,
+        topManager,
+        topCourse,
+        topCentre,
       },
+      notifications: notifs,
       monthlyData,
     });
   }, [filteredData, loading, error]);

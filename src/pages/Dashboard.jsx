@@ -102,31 +102,25 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="glass p-6 md:p-8 rounded-[2rem] relative overflow-hidden group hover:-translate-y-1 transition-transform duration-300">
           <div className="absolute -right-6 -top-6 w-32 h-32 bg-green-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
-          <p className="text-sm text-slate-500 font-medium mb-1">Best Day</p>
-          <h2 className="text-2xl font-bold text-green-600 mb-1">
-            {insights.bestDay}
+          <p className="text-sm text-slate-500 font-medium mb-1">Top Performing Centre</p>
+          <h2 className="text-xl font-bold text-green-600 mb-1 truncate" title={insights.topCentre}>
+            {insights.topCentre}
           </h2>
-          <p className="text-sm font-medium text-slate-600">
-            ₹{insights.bestRevenue.toLocaleString()}
-          </p>
         </div>
 
         <div className="glass p-6 md:p-8 rounded-[2rem] relative overflow-hidden group hover:-translate-y-1 transition-transform duration-300">
-          <div className="absolute -right-6 -top-6 w-32 h-32 bg-rose-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
-          <p className="text-sm text-slate-500 font-medium mb-1">Lowest Day</p>
-          <h2 className="text-2xl font-bold text-rose-500 mb-1">
-            {insights.worstDay}
+          <div className="absolute -right-6 -top-6 w-32 h-32 bg-purple-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
+          <p className="text-sm text-slate-500 font-medium mb-1">Top Manager</p>
+          <h2 className="text-2xl font-bold text-purple-600 mb-1 truncate" title={insights.topManager}>
+            {insights.topManager}
           </h2>
-          <p className="text-sm font-medium text-slate-600">
-            ₹{insights.worstRevenue.toLocaleString()}
-          </p>
         </div>
 
         <div className="glass p-6 md:p-8 rounded-[2rem] relative overflow-hidden group hover:-translate-y-1 transition-transform duration-300">
           <div className="absolute -right-6 -top-6 w-32 h-32 bg-blue-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
-          <p className="text-sm text-slate-500 font-medium mb-1">Avg Daily Revenue</p>
-          <h2 className="text-3xl font-bold text-blue-600">
-            ₹{Math.round(insights.avg).toLocaleString()}
+          <p className="text-sm text-slate-500 font-medium mb-1">Top Course</p>
+          <h2 className="text-xl font-bold text-blue-600 truncate" title={insights.topCourse}>
+            {insights.topCourse}
           </h2>
         </div>
       </div>
