@@ -22,12 +22,20 @@ export default function CentreDetail() {
     const rows = filteredData.slice(1).filter(row => row[6]?.trim() === decodedName);
     
     // Find share and last session data
-    let sharePercent = 0;
+    let extCentreShare = 0;
+    let intCentreShare = 0;
+    let extNeetprepShare = 0;
+    let intNeetprepShare = 0;
+    let assignedManager = "Unassigned";
+
     if (newCentreShare) {
       const shareRow = newCentreShare.find(r => r[0]?.trim() === decodedName);
       if (shareRow) {
-        const shareStr = shareRow[1] || "0";
-        sharePercent = parseFloat(shareStr.replace('%', '')) / 100 || 0;
+        extCentreShare = parseFloat((shareRow[1] || "0").replace('%', '')) / 100 || 0;
+        intCentreShare = parseFloat((shareRow[2] || "0").replace('%', '')) / 100 || 0;
+        assignedManager = shareRow[4]?.trim() || "Unassigned";
+        extNeetprepShare = parseFloat((shareRow[5] || "0").replace('%', '')) / 100 || 0;
+        intNeetprepShare = parseFloat((shareRow[6] || "0").replace('%', '')) / 100 || 0;
       }
     }
 
@@ -41,12 +49,14 @@ export default function CentreDetail() {
 
     if (rows.length === 0) {
       // Allow viewing centre even if it has no current rows but has share/last session data
-      if (sharePercent > 0 || lastYearStudents > 0) {
+      if (extCentreShare > 0 || lastYearStudents > 0) {
         return {
           name: decodedName,
           totalGross: 0, neetprepShare: 0, centreShare: 0, internal: 0, external: 0,
           dailyRevenue: [], studentsCount: 0, students: [],
-          sharePercent, lastYearStudents, studentGrowth: -100 // -100% growth if 0 current students
+          extCentreShare, intCentreShare, extNeetprepShare, intNeetprepShare,
+          assignedManager,
+          lastYearStudents, studentGrowth: -100 // -100% growth if 0 current students
         };
       }
       return { notFound: true };
@@ -98,6 +108,11 @@ export default function CentreDetail() {
     const studentsCount = studentsList.length;
     const studentGrowth = lastYearStudents > 0 ? ((studentsCount - lastYearStudents) / lastYearStudents) * 100 : 0;
 
+    // Fallback if manager isn't in the newCentreShare sheet
+    if (assignedManager === "Unassigned" && studentsList.length > 0) {
+      assignedManager = studentsList[0].manager;
+    }
+
     return {
       name: decodedName,
       totalGross,
@@ -108,7 +123,11 @@ export default function CentreDetail() {
       dailyRevenue,
       studentsCount,
       students: studentsList.sort((a, b) => b.amount - a.amount),
-      sharePercent,
+      extCentreShare,
+      intCentreShare,
+      extNeetprepShare,
+      intNeetprepShare,
+      assignedManager,
       lastYearStudents,
       studentGrowth
     };
@@ -158,7 +177,14 @@ export default function CentreDetail() {
       
       <div>
         <h1 className="text-3xl font-bold text-slate-800 mb-2">{centreData.name}</h1>
-        <p className="text-slate-500">Detailed Centre Breakdown & Revenue</p>
+        <div className="text-slate-500 flex flex-wrap items-center gap-3">
+          <p>Detailed Centre Breakdown & Revenue</p>
+          {centreData.assignedManager && centreData.assignedManager !== "Unassigned" && (
+            <span className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded-md text-xs font-semibold border border-purple-200">
+              Manager: <Link to={`/managers/${encodeURIComponent(centreData.assignedManager)}`} className="hover:underline">{centreData.assignedManager}</Link>
+            </span>
+          )}
+        </div>
       </div>
 
       {/* KPIs */}
@@ -170,13 +196,18 @@ export default function CentreDetail() {
         <div className="glass p-6 rounded-[2rem] hover:-translate-y-1 transition-transform duration-300">
           <p className="text-purple-500 text-sm font-medium mb-2 flex items-center gap-2"><Wallet size={14} /> Neetprep Share</p>
           <h2 className="text-3xl font-bold text-purple-600">₹{centreData.neetprepShare.toLocaleString()}</h2>
+          <div className="flex flex-col gap-1 mt-2 text-xs text-slate-500">
+             <p>Ext Share: <span className="font-semibold text-slate-700">{(centreData.extNeetprepShare * 100).toFixed(0)}%</span></p>
+             <p>Int Share: <span className="font-semibold text-slate-700">{(centreData.intNeetprepShare * 100).toFixed(0)}%</span></p>
+          </div>
         </div>
         <div className="glass p-6 rounded-[2rem] hover:-translate-y-1 transition-transform duration-300">
           <p className="text-blue-500 text-sm font-medium mb-2 flex items-center gap-2"><Wallet size={14} /> Centre Share</p>
           <h2 className="text-3xl font-bold text-blue-600">₹{centreData.centreShare.toLocaleString()}</h2>
-          <p className="text-xs text-slate-400 mt-1">
-            {centreData.sharePercent > 0 ? `(External Share: ${(centreData.sharePercent * 100).toFixed(0)}%)` : 'Share % not found'}
-          </p>
+          <div className="flex flex-col gap-1 mt-2 text-xs text-slate-500">
+             <p>Ext Share: <span className="font-semibold text-slate-700">{(centreData.extCentreShare * 100).toFixed(0)}%</span></p>
+             <p>Int Share: <span className="font-semibold text-slate-700">{(centreData.intCentreShare * 100).toFixed(0)}%</span></p>
+          </div>
         </div>
         <div className="glass p-6 rounded-[2rem] hover:-translate-y-1 transition-transform duration-300">
           <p className="text-orange-500 text-sm font-medium mb-2 flex items-center gap-2"><Users size={14} /> Total Students</p>
@@ -226,7 +257,6 @@ export default function CentreDetail() {
                 <th className="p-4 font-semibold">Date</th>
                 <th className="p-4 font-semibold">Student Name</th>
                 <th className="p-4 font-semibold">Course</th>
-                <th className="p-4 font-semibold">Assigned Manager</th>
                 <th className="p-4 font-semibold text-right text-slate-800">Gross Paid</th>
               </tr>
             </thead>
@@ -236,15 +266,6 @@ export default function CentreDetail() {
                   <td className="p-4 text-slate-500 text-sm whitespace-nowrap">{s.date}</td>
                   <td className="p-4 font-medium text-slate-800">{s.name}</td>
                   <td className="p-4 text-slate-600 text-sm max-w-xs truncate" title={s.course}>{s.course}</td>
-                  <td className="p-4 text-slate-600 text-sm">
-                    {s.manager !== "Unassigned" ? (
-                      <Link to={`/managers/${encodeURIComponent(s.manager)}`} className="text-blue-600 hover:text-blue-800 font-medium hover:underline">
-                        {s.manager}
-                      </Link>
-                    ) : (
-                      <span className="text-slate-400 italic">Unassigned</span>
-                    )}
-                  </td>
                   <td className="p-4 text-right font-bold text-slate-800">
                     ₹{s.amount.toLocaleString()}
                   </td>
