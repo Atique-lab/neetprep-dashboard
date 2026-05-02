@@ -4,30 +4,30 @@ const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
-    const savedUser = localStorage.getItem('auth_user');
+    const savedUser = sessionStorage.getItem('auth_user');
     return savedUser ? JSON.parse(savedUser) : null;
   });
 
   const login = (username, password) => {
     // Admin Check
-    if (username === 'Atique@Neetprep' && password === 'Atique@Gooded') {
-      const adminUser = { role: 'admin', name: 'Atique', username };
+    if (username.toLowerCase() === 'atique' && password.toLowerCase() === 'atique') {
+      const adminUser = { role: 'admin', name: 'Atique', username: 'Atique' };
       setUser(adminUser);
-      localStorage.setItem('auth_user', JSON.stringify(adminUser));
+      sessionStorage.setItem('auth_user', JSON.stringify(adminUser));
       return { success: true };
     }
 
     // Manager Check
-    if (username.endsWith('@Neetprep') && password.endsWith('@Gooded')) {
-      const nameFromUsername = username.split('@')[0];
-      const nameFromPassword = password.split('@')[0];
-      
-      if (nameFromUsername === nameFromPassword) {
-        const managerUser = { role: 'manager', name: nameFromUsername, username };
-        setUser(managerUser);
-        localStorage.setItem('auth_user', JSON.stringify(managerUser));
-        return { success: true };
-      }
+    const allowedManagers = ['Praveen', 'Poonam', 'Mukta', 'Gurpreet', 'Kapil'];
+    
+    // Check if the username matches an allowed manager (case-insensitive)
+    const manager = allowedManagers.find(m => m.toLowerCase() === username.toLowerCase());
+    
+    if (manager && password.toLowerCase() === username.toLowerCase()) {
+      const managerUser = { role: 'manager', name: manager, username: manager };
+      setUser(managerUser);
+      sessionStorage.setItem('auth_user', JSON.stringify(managerUser));
+      return { success: true };
     }
 
     return { success: false, error: 'Invalid username or password' };
@@ -35,7 +35,7 @@ export function AuthProvider({ children }) {
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem('auth_user');
+    sessionStorage.removeItem('auth_user');
   };
 
   return (

@@ -46,7 +46,7 @@ export default function Login() {
               type="text" 
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              placeholder="e.g. ManagerName@Neetprep"
+              placeholder="e.g. Praveen"
               className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500/50 bg-white/50 placeholder:text-slate-400"
               required 
             />
@@ -57,7 +57,7 @@ export default function Login() {
               type="password" 
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="e.g. ManagerName@Gooded"
+              placeholder="Enter your password"
               className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500/50 bg-white/50 placeholder:text-slate-400"
               required 
             />
@@ -72,8 +72,8 @@ export default function Login() {
         </form>
         
         <div className="mt-8 text-center text-xs text-slate-400">
-          <p>Admin Login: Atique@Neetprep / Atique@Gooded</p>
-          <p className="mt-1">Manager Login: Name@Neetprep / Name@Gooded</p>
+          <p>Admin Login: Atique</p>
+          <p className="mt-1">Manager Login: Name (e.g. Praveen)</p>
         </div>
       </div>
     </div>
