@@ -104,7 +104,7 @@ export function DashboardProvider({ children }) {
       },
       notifications: [],
       monthlyData: [],
-      dayWiseComparison: [],
+      monthWiseComparison: [],
     };
 
     if (loading || error || !filteredData || filteredData.length <= 1) return defaultData;
@@ -248,8 +248,8 @@ export function DashboardProvider({ children }) {
     const topCourse = Object.keys(courseMap).sort((a,b) => courseMap[b] - courseMap[a])[0] || "-";
     const topCentre = Object.keys(centreMap).sort((a,b) => centreMap[b] - centreMap[a])[0] || "-";
 
-    // --- Day Wise Comparison logic ---
-    const lastSessionDayMap = {};
+    // --- Month Wise Comparison logic ---
+    const lastSessionMonthMap = {};
     let lastYearTotalStudentsSet = new Set();
     let lastYearTotalRevenue = 0;
     let lastYearRevenueTillToday = 0;
@@ -272,8 +272,11 @@ export function DashboardProvider({ children }) {
         lastYearTotalRevenue += rev;
         
         if (dateStr) {
-          if (!lastSessionDayMap[dateStr]) lastSessionDayMap[dateStr] = 0;
-          lastSessionDayMap[dateStr] += rev;
+          const month = getMonth(dateStr);
+          if (month) {
+             if (!lastSessionMonthMap[month]) lastSessionMonthMap[month] = 0;
+             lastSessionMonthMap[month] += rev;
+          }
           
           if (maxDateThisYearMs > 0) {
              const rowMs = new Date(`${dateStr} 2026`).getTime();
@@ -291,22 +294,21 @@ export function DashboardProvider({ children }) {
        growthVsLastYearTillToday = ((totalRevenueAll - lastYearRevenueTillToday) / lastYearRevenueTillToday) * 100;
     }
 
-    const currentDayRevMap = {};
+    const currentMonthRevMap = {};
     processed.forEach(d => {
-      if (!d.date) return;
-      if (!currentDayRevMap[d.date]) currentDayRevMap[d.date] = 0;
-      currentDayRevMap[d.date] += d.revenue;
+      const month = getMonth(d.date);
+      if (!month) return;
+      if (!currentMonthRevMap[month]) currentMonthRevMap[month] = 0;
+      currentMonthRevMap[month] += d.revenue;
     });
 
-    const allDatesSet = new Set([...Object.keys(currentDayRevMap), ...Object.keys(lastSessionDayMap)]);
-    const dayWiseComparison = Array.from(allDatesSet).map(dateStr => ({
-      date: dateStr,
-      currentRevenue: currentDayRevMap[dateStr] || 0,
-      lastSessionRevenue: lastSessionDayMap[dateStr] || 0,
+    const allMonthsSet = new Set([...Object.keys(currentMonthRevMap), ...Object.keys(lastSessionMonthMap)]);
+    const monthWiseComparison = Array.from(allMonthsSet).map(monthStr => ({
+      month: monthStr,
+      currentRevenue: currentMonthRevMap[monthStr] || 0,
+      lastSessionRevenue: lastSessionMonthMap[monthStr] || 0,
     })).sort((a, b) => {
-       const da = new Date(`${a.date} 2026`);
-       const db = new Date(`${b.date} 2026`);
-       return da - db;
+       return monthsOrder.indexOf(a.month) - monthsOrder.indexOf(b.month);
     });
 
     return {
@@ -334,7 +336,7 @@ export function DashboardProvider({ children }) {
       },
       notifications: notifs,
       monthlyData,
-      dayWiseComparison,
+      monthWiseComparison,
     };
   }, [filteredData, loading, error, extraData.lastSession]);
 

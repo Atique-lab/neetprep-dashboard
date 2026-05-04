@@ -9,8 +9,8 @@ import {
   ResponsiveContainer
 } from 'recharts';
 
-export default function DayWiseComparisonChart({ dayWiseComparison }) {
-  if (!dayWiseComparison || dayWiseComparison.length === 0) {
+export default function MonthWiseComparisonChart({ monthWiseComparison }) {
+  if (!monthWiseComparison || monthWiseComparison.length === 0) {
     return (
       <div className="flex items-center justify-center h-full text-slate-500">
         No comparison data available
@@ -21,17 +21,17 @@ export default function DayWiseComparisonChart({ dayWiseComparison }) {
   return (
     <div className="w-full h-[400px]">
       <div className="mb-6">
-        <h2 className="text-xl font-bold text-slate-800">Day-Wise Improvement</h2>
+        <h2 className="text-xl font-bold text-slate-800">Month-Wise Improvement</h2>
         <p className="text-sm text-slate-500 mt-1">Comparing Current Session Revenue vs Last Session Revenue</p>
       </div>
       <ResponsiveContainer width="100%" height="85%">
         <LineChart
-          data={dayWiseComparison}
+          data={monthWiseComparison}
           margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
         >
           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" opacity={0.5} />
           <XAxis 
-            dataKey="date" 
+            dataKey="month" 
             axisLine={false}
             tickLine={false}
             tick={{ fill: '#64748b', fontSize: 12, fontWeight: 500 }}
@@ -41,7 +41,7 @@ export default function DayWiseComparisonChart({ dayWiseComparison }) {
             axisLine={false}
             tickLine={false}
             tick={{ fill: '#64748b', fontSize: 12 }}
-            tickFormatter={(value) => `₹${(value / 1000).toFixed(0)}k`}
+            tickFormatter={(value) => `₹${(value / 100000).toFixed(1)}L`}
           />
           <Tooltip
             contentStyle={{

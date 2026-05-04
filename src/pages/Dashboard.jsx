@@ -2,11 +2,11 @@ import { motion } from "framer-motion";
 import { DollarSign, Users, TrendingUp, AlertCircle } from "lucide-react";
 import KPICard from "../components/KPICard";
 import RevenueChart from "../components/RevenueChart";
-import DayWiseComparisonChart from "../components/DayWiseComparisonChart";
+import MonthWiseComparisonChart from "../components/MonthWiseComparisonChart";
 import { useDashboardData } from "../hooks/useDashboardData";
 
 export default function Dashboard() {
-  const { kpi, insights, monthlyData, dayWiseComparison, rawData, loading, error } = useDashboardData();
+  const { kpi, insights, monthlyData, monthWiseComparison, rawData, loading, error } = useDashboardData();
 
   if (error) {
     return (
@@ -140,9 +140,9 @@ export default function Dashboard() {
         <RevenueChart monthlyData={monthlyData} rawData={rawData} />
       </div>
 
-      {/* Day Wise Comparison Chart */}
+      {/* Month Wise Comparison Chart */}
       <div className="glass p-6 md:p-8 rounded-[2rem] transition-all hover:shadow-lg hover:shadow-purple-500/5 group">
-        <DayWiseComparisonChart dayWiseComparison={dayWiseComparison} />
+        <MonthWiseComparisonChart monthWiseComparison={monthWiseComparison} />
       </div>
 
       {/* Insights */}
