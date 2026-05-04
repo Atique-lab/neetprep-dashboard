@@ -59,7 +59,7 @@ export default function MonthWiseComparisonChart({ monthWiseComparison }) {
           <Line 
             type="monotone" 
             dataKey="currentRevenue" 
-            name="Current Session" 
+            name="Current Session (2026)" 
             stroke="#8b5cf6" 
             strokeWidth={3}
             dot={{ r: 4, strokeWidth: 2 }}
@@ -68,7 +68,7 @@ export default function MonthWiseComparisonChart({ monthWiseComparison }) {
           <Line 
             type="monotone" 
             dataKey="lastSessionRevenue" 
-            name="Last Session" 
+            name="Last Session (2025)" 
             stroke="#94a3b8" 
             strokeWidth={3}
             strokeDasharray="5 5"

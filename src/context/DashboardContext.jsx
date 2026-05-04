@@ -251,14 +251,17 @@ export function DashboardProvider({ children }) {
     // --- Month Wise Comparison logic ---
     const lastSessionMonthMap = {};
     let lastYearTotalStudentsSet = new Set();
+    let lastYearStudentsSetTillToday = new Set();
     let lastYearTotalRevenue = 0;
     let lastYearRevenueTillToday = 0;
 
     let maxDateThisYearMs = 0;
+    let maxDateString = "-";
     processed.forEach(d => {
        const ms = new Date(`${d.date} 2026`).getTime();
        if (ms > maxDateThisYearMs) {
           maxDateThisYearMs = ms;
+          maxDateString = d.date;
        }
     });
 
@@ -282,6 +285,7 @@ export function DashboardProvider({ children }) {
              const rowMs = new Date(`${dateStr} 2026`).getTime();
              if (rowMs <= maxDateThisYearMs) {
                 lastYearRevenueTillToday += rev;
+                if (email) lastYearStudentsSetTillToday.add(email);
              }
           }
         }
@@ -289,6 +293,7 @@ export function DashboardProvider({ children }) {
     }
 
     const lastYearTotalStudents = lastYearTotalStudentsSet.size;
+    const lastYearStudentsTillToday = lastYearStudentsSetTillToday.size;
     let growthVsLastYearTillToday = 0;
     if (lastYearRevenueTillToday > 0) {
        growthVsLastYearTillToday = ((totalRevenueAll - lastYearRevenueTillToday) / lastYearRevenueTillToday) * 100;
@@ -313,12 +318,14 @@ export function DashboardProvider({ children }) {
 
     return {
       kpi: {
+        maxDateString,
         students: processed.length,
         currentRevenue,
         prevRevenue,
         totalRevenue: totalRevenueAll,
         growth,
         lastYearTotalStudents,
+        lastYearStudentsTillToday,
         thisYearTotalRevenue: totalRevenueAll,
         lastYearTotalRevenue,
         lastYearRevenueTillToday,

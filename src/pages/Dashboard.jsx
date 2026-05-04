@@ -59,7 +59,7 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 md:gap-6">
         <KPICard
-          title="Total Students"
+          title={`Current Students (Till ${kpi.maxDateString})`}
           value={kpi.students}
           color="blue"
           icon={<Users size={20} />}
@@ -100,8 +100,8 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 md:gap-6">
         <KPICard
-          title="Last Session Students"
-          value={kpi.lastYearTotalStudents}
+          title={`Last Session Students (Till ${kpi.maxDateString})`}
+          value={kpi.lastYearStudentsTillToday}
           color="blue"
           icon={<Users size={20} />}
         />
