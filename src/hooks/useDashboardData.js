@@ -119,11 +119,14 @@ export function useDashboardData() {
     });
 
     const prevRevenue = mtdPrevRevenue || 0;
-    let growth = 0;
-    // Growth against previous session total or previous month depending on what's preferred.
-    // We'll show Growth of Total vs Last Session Total.
+    let sessionGrowth = 0;
+    let monthlyGrowth = 0;
+
     if (totalLastSessionRevenue > 0) {
-      growth = ((totalRevenueAll - totalLastSessionRevenue) / totalLastSessionRevenue) * 100;
+      sessionGrowth = ((totalRevenueAll - totalLastSessionRevenue) / totalLastSessionRevenue) * 100;
+    }
+    if (prevRevenue > 0) {
+      monthlyGrowth = ((currentRevenue - prevRevenue) / prevRevenue) * 100;
     }
 
     const dayMap = {};
@@ -201,10 +204,12 @@ export function useDashboardData() {
     setData({
       kpi: {
         students: processed.length,
-        currentRevenue,
-        prevRevenue: totalLastSessionRevenue, // We use this field to display Last Session Revenue
-        totalRevenue: totalRevenueAll,
-        growth,
+        currentMonthRev: currentRevenue,
+        lastMonthRev: prevRevenue,
+        monthlyGrowth,
+        currentSessionRev: totalRevenueAll,
+        lastSessionRev: totalLastSessionRevenue,
+        sessionGrowth,
       },
       insights: {
         bestDay: bestDay?.date || "-",

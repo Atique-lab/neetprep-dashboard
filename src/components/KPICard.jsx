@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 
-export default function KPICard({ title, value, icon, color }) {
+export default function KPICard({ title, value, subtitle, icon, color }) {
   const colorMap = {
     orange: "from-orange-400 to-pink-500",
     purple: "from-purple-500 to-indigo-600",
@@ -33,13 +33,20 @@ export default function KPICard({ title, value, icon, color }) {
 
       {/* Content */}
       <div className="relative z-10 overflow-hidden">
-        <h2 
-          className="text-2xl 2xl:text-3xl font-bold text-slate-800 tracking-tight truncate"
-          title={typeof value === 'string' || typeof value === 'number' ? value : ''}
-        >
-          {value}
-        </h2>
-        <p className="text-slate-500 text-sm font-medium mt-1 truncate">
+        <div className="flex items-end gap-2 mb-1">
+          <h2 
+            className="text-2xl 2xl:text-3xl font-bold text-slate-800 tracking-tight truncate"
+            title={typeof value === 'string' || typeof value === 'number' ? value : ''}
+          >
+            {value}
+          </h2>
+          {subtitle && (
+            <span className={`text-sm font-semibold mb-1 ${subtitle.toString().includes('-') ? 'text-rose-500' : 'text-emerald-500'}`}>
+              {subtitle}
+            </span>
+          )}
+        </div>
+        <p className="text-slate-500 text-sm font-medium truncate">
           {title}
         </p>
       </div>

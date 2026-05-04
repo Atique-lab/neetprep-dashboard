@@ -65,29 +65,31 @@ export default function Dashboard() {
         />
 
         <KPICard
-          title="Current Revenue"
-          value={`₹${kpi.currentRevenue.toLocaleString()}`}
+          title="This Month (MTD)"
+          value={`₹${kpi.currentMonthRev?.toLocaleString() || 0}`}
+          subtitle={`${kpi.monthlyGrowth > 0 ? '+' : ''}${kpi.monthlyGrowth?.toFixed(1) || 0}% vs Last MTD`}
           color="purple"
           icon={<DollarSign size={20} />}
         />
 
         <KPICard
-          title="Previous Revenue"
-          value={`₹${kpi.prevRevenue.toLocaleString()}`}
+          title="Last Month (MTD)"
+          value={`₹${kpi.lastMonthRev?.toLocaleString() || 0}`}
           color="orange"
-          icon={<TrendingUp size={20} />}
-        />
-
-        <KPICard
-          title="Total Revenue"
-          value={`₹${kpi.totalRevenue.toLocaleString()}`}
-          color="green"
           icon={<DollarSign size={20} />}
         />
 
         <KPICard
-          title="Growth"
-          value={`${kpi.growth.toFixed(1)}%`}
+          title="This Session (YTD)"
+          value={`₹${kpi.currentSessionRev?.toLocaleString() || 0}`}
+          subtitle={`${kpi.sessionGrowth > 0 ? '+' : ''}${kpi.sessionGrowth?.toFixed(1) || 0}% vs Last Session`}
+          color="green"
+          icon={<TrendingUp size={20} />}
+        />
+
+        <KPICard
+          title="Last Session"
+          value={`₹${kpi.lastSessionRev?.toLocaleString() || 0}`}
           color="pink"
           icon={<TrendingUp size={20} />}
         />
