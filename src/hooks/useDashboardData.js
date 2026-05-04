@@ -60,9 +60,10 @@ export function useDashboardData() {
       if (!rows || rows.length <= 1) return [];
       return rows.slice(1).map((row) => ({
         date: row[1],
+        email: (row[4] || "").toString().trim().toLowerCase(),
         revenue: parseNumber(row[11]),
         neetprep: parseNumber(row[20]),
-        type: (row[12] || "").toString().trim(), // Internal/External col index 12
+        type: (row[12] || "").toString().trim(),
       })).filter(row => row.date);
     };
 
@@ -70,14 +71,23 @@ export function useDashboardData() {
     const lastSessionRows = extraData?.lastSession || [];
     const lastSessionProcessed = processRows(lastSessionRows);
 
+    // Deduplicate last session by email: unique student count + deduplicated revenue (col L)
+    const lastSessionEmailMap = {};
+    lastSessionProcessed.forEach(d => {
+      const key = d.email || `__no_email_${Math.random()}`;
+      if (!lastSessionEmailMap[key]) {
+        lastSessionEmailMap[key] = d.revenue; // first entry per email
+      }
+    });
+    const lastSessionStudents = Object.keys(lastSessionEmailMap).length;
+    const totalLastSessionRevenue = Object.values(lastSessionEmailMap).reduce((s, v) => s + v, 0);
+
     const monthsOrder = [
       "Mar", "Apr", "May", "Jun", "Jul", "Aug",
       "Sep", "Oct", "Nov", "Dec", "Jan", "Feb"
     ];
 
     const totalRevenueAll = processed.reduce((sum, d) => sum + d.revenue, 0);
-    const totalLastSessionRevenue = lastSessionProcessed.reduce((sum, d) => sum + d.revenue, 0);
-    const lastSessionStudents = lastSessionProcessed.length;
 
     const monthlyMap = {};
     const lastMonthlyMap = {};
