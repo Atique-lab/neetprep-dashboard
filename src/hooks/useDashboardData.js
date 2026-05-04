@@ -114,29 +114,27 @@ export function useDashboardData() {
         lastRevenue: lastMonthlyMap[m] || 0,
       }));
 
-    const currentMonthData = monthlyData[monthlyData.length - 1];
-    const prevMonthData = monthlyData[monthlyData.length - 2];
-    const currentMonthName = currentMonthData?.month;
-    const prevMonthName = prevMonthData?.month;
+    // ── Use REAL calendar month from today's date ──────────────────────────
+    const now = new Date();
+    // 3-letter month abbreviation matching Google Sheet format (e.g. "May", "Apr")
+    const currentMonthName = now.toLocaleString("default", { month: "short" }); // "May"
+    const prevDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const prevMonthName = prevDate.toLocaleString("default", { month: "short" }); // "Apr"
+    const todayDay = now.getDate(); // e.g. 5
 
-    let latestDay = 0;
-    processed.forEach(d => {
-      if (getMonth(d.date) === currentMonthName) {
-        const day = parseInt(d.date.split("-")[0], 10);
-        if (day > latestDay) latestDay = day;
-      }
-    });
+    // This Month revenue = ALL entries in current calendar month
+    const currentRevenue = monthlyMap[currentMonthName] || 0;
 
-    const currentRevenue = currentMonthData?.revenue || 0;
-    // Full total of previous month (not MTD-capped) — for the "Last Month" KPI card
-    const lastMonthRevFull = prevMonthData?.revenue || 0;
+    // Last Month revenue = ALL entries in last calendar month (full month total)
+    const lastMonthRevFull = monthlyMap[prevMonthName] || 0;
 
-    // MTD slice of prev month (up to same day as current month) — for fair growth comparison
+    // MTD of last month = entries in last month up to same day-of-month as today
+    // (for a fair apples-to-apples growth comparison)
     let mtdPrevRevenue = 0;
     processed.forEach(d => {
       if (getMonth(d.date) === prevMonthName) {
         const day = parseInt(d.date.split("-")[0], 10);
-        if (day <= latestDay) {
+        if (day <= todayDay) {
           mtdPrevRevenue += d.revenue;
         }
       }
@@ -149,9 +147,11 @@ export function useDashboardData() {
     if (totalLastSessionRevenue > 0) {
       sessionGrowth = ((totalRevenueAll - totalLastSessionRevenue) / totalLastSessionRevenue) * 100;
     }
+    // Growth = This Month MTD vs Last Month MTD (same day range)
     if (prevRevenue > 0) {
       monthlyGrowth = ((currentRevenue - prevRevenue) / prevRevenue) * 100;
     }
+
 
     // Enrolment Growth vs Last Session
     const enrolmentGrowth = lastSessionStudents > 0
