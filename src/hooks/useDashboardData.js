@@ -128,7 +128,10 @@ export function useDashboardData() {
     });
 
     const currentRevenue = currentMonthData?.revenue || 0;
+    // Full total of previous month (not MTD-capped) — for the "Last Month" KPI card
+    const lastMonthRevFull = prevMonthData?.revenue || 0;
 
+    // MTD slice of prev month (up to same day as current month) — for fair growth comparison
     let mtdPrevRevenue = 0;
     processed.forEach(d => {
       if (getMonth(d.date) === prevMonthName) {
@@ -275,7 +278,7 @@ export function useDashboardData() {
       kpi: {
         students: processed.length,
         currentMonthRev: currentRevenue,
-        lastMonthRev: prevRevenue,
+        lastMonthRev: lastMonthRevFull,
         monthlyGrowth,
         currentSessionRev: totalRevenueAll,
         lastSessionRev: totalLastSessionRevenue,

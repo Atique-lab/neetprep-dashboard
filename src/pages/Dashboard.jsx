@@ -88,9 +88,8 @@ export default function Dashboard() {
           icon={<DollarSign size={20} />}
         />
         <KPICard
-          title="Growth vs Last Month"
+          title="Growth"
           value={`${monthlyGrowthPositive ? "+" : ""}${(kpi.monthlyGrowth || 0).toFixed(1)}%`}
-          subtitle={kpi.prevMonthName ? `${kpi.prevMonthName} → ${kpi.currentMonthName}` : null}
           color="pink"
           icon={monthlyGrowthPositive ? <TrendingUp size={20} /> : <TrendingDown size={20} />}
         />
