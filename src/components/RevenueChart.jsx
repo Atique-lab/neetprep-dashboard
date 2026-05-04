@@ -81,6 +81,10 @@ export default function RevenueChart({ monthlyData, rawData }) {
                 <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.4} />
                 <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
               </linearGradient>
+              <linearGradient id="colorLastRevenue" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.4} />
+                <stop offset="95%" stopColor="#f59e0b" stopOpacity={0} />
+              </linearGradient>
             </defs>
             
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" opacity={0.5} />
@@ -103,7 +107,10 @@ export default function RevenueChart({ monthlyData, rawData }) {
               }}
               itemStyle={{ color: '#1e293b', fontWeight: 600 }}
               labelStyle={{ color: '#64748b', marginBottom: '4px', fontSize: '13px' }}
-              formatter={(value) => [`₹${value.toLocaleString()}`, "Revenue"]}
+              formatter={(value, name) => [
+                `₹${value.toLocaleString()}`, 
+                name === 'lastRevenue' ? 'Last Session' : 'Current Session'
+              ]}
               labelFormatter={(label, payload) => {
                 if (viewMode === 'daily' && payload && payload.length > 0) {
                   return payload[0].payload.fullDate || label;
@@ -112,9 +119,24 @@ export default function RevenueChart({ monthlyData, rawData }) {
               }}
             />
 
+            {viewMode === "monthly" && (
+              <Area
+                type="monotone"
+                dataKey="lastRevenue"
+                name="lastRevenue"
+                stroke="#f59e0b"
+                strokeWidth={3}
+                strokeDasharray="5 5"
+                fill="url(#colorLastRevenue)"
+                activeDot={{ r: 5, strokeWidth: 3, stroke: '#fff', fill: '#f59e0b' }}
+                style={{ cursor: "pointer" }}
+              />
+            )}
+
             <Area
               type="monotone"
               dataKey="revenue"
+              name="revenue"
               stroke="#8b5cf6"
               strokeWidth={4}
               fill="url(#colorRevenue)"

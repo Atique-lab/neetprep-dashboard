@@ -28,10 +28,9 @@ export default function Centres() {
     const map = {};
     if (lastSession && lastSession.length > 1) {
         lastSession.slice(1).forEach(row => {
-            let name = row[6]?.trim(); // Center name in Last Session is at index 6
-            if (name) name = name.replace(/\s+/g, ' ').trim();
-            const count = parseInt(row[4], 10) || 0; // Email is at index 4, but we want unique students. Wait, here we just want total count of records per centre in last session! So just increment it.
-            if (name) map[name] = (map[name] || 0) + 1;
+            const name = row[0]?.trim();
+            const count = parseInt(row[4], 10) || 0; // Index 4 is Grand Total
+            if (name) map[name] = count;
         });
     }
     return map;
@@ -41,8 +40,7 @@ export default function Centres() {
     const map = {};
     if (newCentreShare && newCentreShare.length > 1) {
         newCentreShare.slice(1).forEach(row => {
-            let name = row[0]?.trim();
-            if (name) name = name.replace(/\s+/g, ' ').trim();
+            const name = row[0]?.trim();
             // Assuming we use External Share for the "Share %" display by default
             const shareStr = row[1] || "0";
             const share = parseFloat(shareStr.replace('%', '')) / 100 || 0;
@@ -66,8 +64,7 @@ export default function Centres() {
     const centreMap = {};
 
     processed.forEach((d) => {
-      let name = d.centre.trim();
-      if (name) name = name.replace(/\s+/g, ' ').trim();
+      const name = d.centre.trim();
       if (!name) return;
 
       if (!centreMap[name]) {

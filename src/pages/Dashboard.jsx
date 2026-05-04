@@ -2,11 +2,10 @@ import { motion } from "framer-motion";
 import { DollarSign, Users, TrendingUp, AlertCircle } from "lucide-react";
 import KPICard from "../components/KPICard";
 import RevenueChart from "../components/RevenueChart";
-import MonthWiseComparisonChart from "../components/MonthWiseComparisonChart";
 import { useDashboardData } from "../hooks/useDashboardData";
 
 export default function Dashboard() {
-  const { kpi, insights, monthlyData, monthWiseComparison, rawData, loading, error } = useDashboardData();
+  const { kpi, insights, monthlyData, rawData, loading, error } = useDashboardData();
 
   if (error) {
     return (
@@ -59,7 +58,7 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 md:gap-6">
         <KPICard
-          title={`Current Students (Till ${kpi.maxDateString})`}
+          title="Total Students"
           value={kpi.students}
           color="blue"
           icon={<Users size={20} />}
@@ -94,55 +93,9 @@ export default function Dashboard() {
         />
       </div>
 
-      <div className="mb-2 mt-8">
-        <h2 className="text-xl font-bold text-slate-800 tracking-tight">Session-Over-Session Comparison</h2>
-      </div>
-
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 md:gap-6">
-        <KPICard
-          title={`Last Session Students (Till ${kpi.maxDateString})`}
-          value={kpi.lastYearStudentsTillToday}
-          color="blue"
-          icon={<Users size={20} />}
-        />
-
-        <KPICard
-          title="Current Session Rev"
-          value={`₹${kpi.thisYearTotalRevenue.toLocaleString()}`}
-          color="purple"
-          icon={<DollarSign size={20} />}
-        />
-
-        <KPICard
-          title="Last Session Rev (Till Date)"
-          value={`₹${kpi.lastYearRevenueTillToday.toLocaleString()}`}
-          color="orange"
-          icon={<DollarSign size={20} />}
-        />
-
-        <KPICard
-          title="Total Last Session Rev"
-          value={`₹${kpi.lastYearTotalRevenue.toLocaleString()}`}
-          color="green"
-          icon={<DollarSign size={20} />}
-        />
-
-        <KPICard
-          title="Growth (Till Date)"
-          value={`${kpi.growthVsLastYearTillToday.toFixed(1)}%`}
-          color={kpi.growthVsLastYearTillToday >= 0 ? "pink" : "orange"}
-          icon={<TrendingUp size={20} />}
-        />
-      </div>
-
       {/* Chart */}
       <div className="glass p-6 md:p-8 rounded-[2rem] transition-all hover:shadow-lg hover:shadow-purple-500/5 group">
         <RevenueChart monthlyData={monthlyData} rawData={rawData} />
-      </div>
-
-      {/* Month Wise Comparison Chart */}
-      <div className="glass p-6 md:p-8 rounded-[2rem] transition-all hover:shadow-lg hover:shadow-purple-500/5 group">
-        <MonthWiseComparisonChart monthWiseComparison={monthWiseComparison} />
       </div>
 
       {/* Insights */}

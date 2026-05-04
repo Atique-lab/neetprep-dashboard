@@ -9,6 +9,7 @@ export default function Sidebar() {
     { name: "Revenue", path: "/revenue", icon: <IndianRupee size={20} /> },
     { name: "Managers", path: "/managers", icon: <Users size={20} /> },
     { name: "Centres", path: "/centres", icon: <School size={20} /> },
+    { name: "Courses", path: "/courses", icon: <BookOpen size={20} /> },
     { name: "Payments", path: "/payments", icon: <CreditCard size={20} /> },
     { name: "Students", path: "/students", icon: <GraduationCap size={20} /> },
   ];

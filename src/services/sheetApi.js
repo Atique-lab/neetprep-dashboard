@@ -37,12 +37,15 @@ export async function fetchNewCentreShare() {
 
 export async function fetchLastSessionEnrolments() {
   try {
-    const LAST_SESSION_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT4cMEDg9HDTf1W786dR8KGQto8XJxUqvqt0Ii5bIyCeiCZm7p6XtbjS_rGiZ46tQwZ2SK4d6uO2bvj/pub?gid=739726484&single=true&output=csv";
+    const LAST_SESSION_DOC_ID = "1Jw3em-neeh8A16_nYyQ5lf_PjAGc0ybM0LEHEWLGHGk";
+    const LAST_SESSION_URL = `https://docs.google.com/spreadsheets/d/${LAST_SESSION_DOC_ID}/export?format=csv&gid=739726484`;
+    
     const res = await fetch(LAST_SESSION_URL);
     if (!res.ok) {
       throw new Error(`HTTP error! status: ${res.status}`);
     }
     const text = await res.text();
+    
     return new Promise((resolve, reject) => {
       Papa.parse(text, {
         complete: (results) => {
