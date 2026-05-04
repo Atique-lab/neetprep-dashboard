@@ -94,6 +94,47 @@ export default function Dashboard() {
         />
       </div>
 
+      <div className="mb-2 mt-8">
+        <h2 className="text-xl font-bold text-slate-800 tracking-tight">Year-Over-Year Comparison</h2>
+      </div>
+
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 md:gap-6">
+        <KPICard
+          title="Last Year Students"
+          value={kpi.lastYearTotalStudents}
+          color="blue"
+          icon={<Users size={20} />}
+        />
+
+        <KPICard
+          title="This Year Revenue"
+          value={`₹${kpi.thisYearTotalRevenue.toLocaleString()}`}
+          color="purple"
+          icon={<DollarSign size={20} />}
+        />
+
+        <KPICard
+          title="Last Year Rev (Till Date)"
+          value={`₹${kpi.lastYearRevenueTillToday.toLocaleString()}`}
+          color="orange"
+          icon={<DollarSign size={20} />}
+        />
+
+        <KPICard
+          title="Total Last Year Rev"
+          value={`₹${kpi.lastYearTotalRevenue.toLocaleString()}`}
+          color="green"
+          icon={<DollarSign size={20} />}
+        />
+
+        <KPICard
+          title="YOY Growth (Till Date)"
+          value={`${kpi.growthVsLastYearTillToday.toFixed(1)}%`}
+          color={kpi.growthVsLastYearTillToday >= 0 ? "pink" : "orange"}
+          icon={<TrendingUp size={20} />}
+        />
+      </div>
+
       {/* Chart */}
       <div className="glass p-6 md:p-8 rounded-[2rem] transition-all hover:shadow-lg hover:shadow-purple-500/5 group">
         <RevenueChart monthlyData={monthlyData} rawData={rawData} />

@@ -1,33 +1,39 @@
-import { useState, useEffect } from "react";
+import { useMemo } from "react";
 import { useGlobalData } from "../context/DashboardContext";
 
 export function useDashboardData() {
   const { filteredData, rawData, extraData, loading, error } = useGlobalData();
-  const [data, setData] = useState({
-    kpi: {
-      students: 0,
-      currentRevenue: 0,
-      prevRevenue: 0,
-      totalRevenue: 0,
-      growth: 0,
-    },
-    insights: {
-      bestDay: "-",
-      bestRevenue: 0,
-      worstDay: "-",
-      worstRevenue: 0,
-      avg: 0,
-      topManager: "-",
-      topCourse: "-",
-      topCentre: "-",
-    },
-    notifications: [],
-    monthlyData: [],
-    dayWiseComparison: [],
-  });
 
-  useEffect(() => {
-    if (loading || error || !filteredData || filteredData.length <= 1) return;
+  const computedData = useMemo(() => {
+    const defaultData = {
+      kpi: {
+        students: 0,
+        currentRevenue: 0,
+        prevRevenue: 0,
+        totalRevenue: 0,
+        growth: 0,
+        lastYearTotalStudents: 0,
+        thisYearTotalRevenue: 0,
+        lastYearTotalRevenue: 0,
+        lastYearRevenueTillToday: 0,
+        growthVsLastYearTillToday: 0,
+      },
+      insights: {
+        bestDay: "-",
+        bestRevenue: 0,
+        worstDay: "-",
+        worstRevenue: 0,
+        avg: 0,
+        topManager: "-",
+        topCourse: "-",
+        topCentre: "-",
+      },
+      notifications: [],
+      monthlyData: [],
+      dayWiseComparison: [],
+    };
+
+    if (loading || error || !filteredData || filteredData.length <= 1) return defaultData;
 
     const parseNumber = (val) => {
       if (!val) return 0;
@@ -133,7 +139,6 @@ export function useDashboardData() {
 
        if (amount === 0) zeroPaidStudents++;
        if (amount > 0 && centreShare === 0 && centre) {
-         // Cap the specific notifications to avoid spamming
          if (notifs.length < 20) {
             notifs.push(`Zero Centre Share for student ${name || 'Unknown'} at ${centre}`);
          }
@@ -170,15 +175,45 @@ export function useDashboardData() {
 
     // --- Day Wise Comparison logic ---
     const lastSessionDayMap = {};
+    let lastYearTotalStudentsSet = new Set();
+    let lastYearTotalRevenue = 0;
+    let lastYearRevenueTillToday = 0;
+
+    let maxDateThisYearMs = 0;
+    processed.forEach(d => {
+       const ms = new Date(`${d.date} 2026`).getTime();
+       if (ms > maxDateThisYearMs) {
+          maxDateThisYearMs = ms;
+       }
+    });
+
     if (extraData?.lastSession?.length > 1) {
       extraData.lastSession.slice(1).forEach(row => {
         const dateStr = row[1];
+        const email = row[4];
         const rev = parseNumber(row[11]);
+        
+        if (email) lastYearTotalStudentsSet.add(email);
+        lastYearTotalRevenue += rev;
+        
         if (dateStr) {
           if (!lastSessionDayMap[dateStr]) lastSessionDayMap[dateStr] = 0;
           lastSessionDayMap[dateStr] += rev;
+          
+          if (maxDateThisYearMs > 0) {
+             const rowMs = new Date(`${dateStr} 2026`).getTime();
+             if (rowMs <= maxDateThisYearMs) {
+                lastYearRevenueTillToday += rev;
+             }
+          }
         }
       });
+    }
+
+    const lastYearTotalStudents = lastYearTotalStudentsSet.size;
+    let growthVsLastYearTillToday = 0;
+    if (lastYearRevenueTillToday > 0) {
+       growthVsLastYearTillToday = ((totalRevenueAll - lastYearRevenueTillToday) / lastYearRevenueTillToday) * 100;
     }
 
     const currentDayRevMap = {};
@@ -200,13 +235,18 @@ export function useDashboardData() {
     });
     // ---------------------------------
 
-    setData({
+    return {
       kpi: {
         students: processed.length,
         currentRevenue,
         prevRevenue,
         totalRevenue: totalRevenueAll,
         growth,
+        lastYearTotalStudents,
+        thisYearTotalRevenue: totalRevenueAll,
+        lastYearTotalRevenue,
+        lastYearRevenueTillToday,
+        growthVsLastYearTillToday,
       },
       insights: {
         bestDay: bestDay?.date || "-",
@@ -221,9 +261,8 @@ export function useDashboardData() {
       notifications: notifs,
       monthlyData,
       dayWiseComparison,
-    });
+    };
   }, [filteredData, loading, error, extraData.lastSession]);
 
-  // Keep returning rawData so components that need the master dataset still have it
-  return { ...data, rawData, filteredData, extraData, loading, error };
+  return { ...computedData, rawData, filteredData, extraData, loading, error };
 }

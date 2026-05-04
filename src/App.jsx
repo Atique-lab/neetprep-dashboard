@@ -11,7 +11,6 @@ import Centres from "./pages/Centres";
 import CentreDetail from "./pages/CentreDetail";
 import Payments from "./pages/Payments";
 import Students from "./pages/Students";
-import Courses from "./pages/Courses";
 
 function AppRoutes() {
   const { user } = useAuth();
@@ -31,7 +30,6 @@ function AppRoutes() {
         <Route path="centres/:id" element={<CentreDetail />} />
         <Route path="payments" element={<Payments />} />
         <Route path="students" element={<Students />} />
-        <Route path="courses" element={<Courses />} />
       </Route>
     </Routes>
   );
