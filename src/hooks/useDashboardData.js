@@ -153,13 +153,14 @@ export function useDashboardData() {
     }
 
 
-    // Enrolment Growth vs Last Session
+    // Fix #5: Deduplicate current session by email for fair enrolment growth comparison
+    const currentUniqueEmails = new Set(processed.map(d => d.email).filter(Boolean));
+    const currentUniqueCount = currentUniqueEmails.size || processed.length;
     const enrolmentGrowth = lastSessionStudents > 0
-      ? (((processed.length - lastSessionStudents) / lastSessionStudents) * 100)
+      ? (((currentUniqueCount - lastSessionStudents) / lastSessionStudents) * 100)
       : 0;
 
-    // Revenue Growth vs Last Session (YTD equivalent — months elapsed in current session)
-    // Current session starts Mar. Count how many months have data.
+    // Fix #6: Revenue growth uses only months that exist in current session (fair YTD comparison)
     const currentSessionMonths = monthsOrder.filter(m => monthlyMap[m] !== undefined);
     const lastSessionYTDRevenue = currentSessionMonths.reduce((sum, m) => sum + (lastMonthlyMap[m] || 0), 0);
     const revenueGrowthVsLastSession = lastSessionYTDRevenue > 0
@@ -198,10 +199,11 @@ export function useDashboardData() {
 
     let yesterdayExternal = 0;
     let yesterdayInternal = 0;
+    // Fix #2: trim both sides to handle trailing spaces/tabs from Google Sheets
     const validRows = filteredData.slice(1).filter(r => r[1]);
 
     validRows.forEach(row => {
-      if (row[1] === yesterdayLabel) {
+      if ((row[1] || "").toString().trim() === yesterdayLabel.trim()) {
         const type = (row[12] || "").toString().trim().toLowerCase();
         if (type === "external") yesterdayExternal++;
         else if (type === "internal") yesterdayInternal++;
@@ -214,7 +216,9 @@ export function useDashboardData() {
     const managerMap = {};
     const courseMap = {};
     const centreMap = {};
+    // Fix #16: notifications stored as objects with text + timestamp
     const notifs = [];
+    const notifTimestamp = new Date().toISOString();
     let zeroPaidStudents = 0;
 
     validRows.forEach(row => {
@@ -228,7 +232,7 @@ export function useDashboardData() {
       if (amount === 0) zeroPaidStudents++;
       if (amount > 0 && centreShare === 0 && centre) {
         if (notifs.length < 20) {
-          notifs.push(`Zero Centre Share for student ${name || 'Unknown'} at ${centre}`);
+          notifs.push({ text: `Zero Centre Share for student ${name || 'Unknown'} at ${centre}`, ts: notifTimestamp });
         }
       }
 
@@ -238,7 +242,7 @@ export function useDashboardData() {
     });
 
     if (zeroPaidStudents > 0) {
-      notifs.unshift(`Alert: ${zeroPaidStudents} Zero Paid Student(s) detected.`);
+      notifs.unshift({ text: `Alert: ${zeroPaidStudents} Zero Paid Student(s) detected.`, ts: notifTimestamp });
     }
 
     const last7Days = Array.from({ length: 7 }, (_, i) => {
@@ -250,10 +254,10 @@ export function useDashboardData() {
       return `${day}-${month} - ${year}`;
     });
 
-    const enrolledDates = new Set(validRows.map(r => r[1]));
+    const enrolledDates = new Set(validRows.map(r => (r[1] || "").toString().trim()));
     const zeroEnrolmentDays = last7Days.filter(d => !enrolledDates.has(d));
     if (zeroEnrolmentDays.length > 0 && zeroEnrolmentDays.length < 7) {
-      notifs.unshift(`Warning: Zero Enrolment on ${zeroEnrolmentDays.join(', ')}`);
+      notifs.unshift({ text: `Warning: Zero Enrolment on ${zeroEnrolmentDays.join(', ')}`, ts: notifTimestamp });
     }
 
     const dayMap = {};

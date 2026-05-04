@@ -153,6 +153,7 @@ export default function Dashboard() {
                 <Trophy size={15} className="text-amber-500" />
                 <p className="text-sm text-slate-500 font-medium">Top Performing Centre</p>
               </div>
+              {/* Fix #9: full name in title attribute for tooltip on hover */}
               <h2 className="text-base font-bold text-green-600 truncate" title={insights.topCentre}>
                 {insights.topCentre}
               </h2>
@@ -178,20 +179,28 @@ export default function Dashboard() {
               Yesterday Enrolments ({insights.yesterdayLabel})
             </p>
           </div>
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-slate-500">External</span>
-              <span className="font-bold text-blue-600 text-xl">{insights.yesterdayExternal}</span>
+          {/* Fix #12: empty state when no enrolments recorded */}
+          {insights.yesterdayTotal === 0 ? (
+            <div className="flex flex-col items-center justify-center py-4 text-center">
+              <CalendarCheck2 size={32} className="text-slate-300 mb-2" />
+              <p className="text-sm text-slate-400 font-medium">No enrolments recorded yesterday</p>
             </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-slate-500">Internal</span>
-              <span className="font-bold text-indigo-600 text-xl">{insights.yesterdayInternal}</span>
+          ) : (
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-slate-500">External</span>
+                <span className="font-bold text-blue-600 text-xl">{insights.yesterdayExternal}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-slate-500">Internal</span>
+                <span className="font-bold text-indigo-600 text-xl">{insights.yesterdayInternal}</span>
+              </div>
+              <div className="flex justify-between items-center border-t border-slate-100 pt-2 mt-2">
+                <span className="text-sm font-semibold text-slate-700">Total</span>
+                <span className="font-bold text-slate-800 text-2xl">{insights.yesterdayTotal}</span>
+              </div>
             </div>
-            <div className="flex justify-between items-center border-t border-slate-100 pt-2 mt-2">
-              <span className="text-sm font-semibold text-slate-700">Total</span>
-              <span className="font-bold text-slate-800 text-2xl">{insights.yesterdayTotal}</span>
-            </div>
-          </div>
+          )}
         </div>
 
         {/* Alerts */}

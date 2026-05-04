@@ -40,24 +40,53 @@ export default function Header() {
   };
 
   const getNotifStyle = (notif) => {
-    if (notif.startsWith("Alert:")) return { dot: "bg-rose-500", bg: "bg-rose-50/60", text: "text-rose-800" };
-    if (notif.startsWith("Warning:")) return { dot: "bg-amber-500", bg: "bg-amber-50/60", text: "text-amber-800" };
+    const text = typeof notif === 'string' ? notif : notif.text;
+    if (text.startsWith("Alert:")) return { dot: "bg-rose-500", bg: "bg-rose-50/60", text: "text-rose-800" };
+    if (text.startsWith("Warning:")) return { dot: "bg-amber-500", bg: "bg-amber-50/60", text: "text-amber-800" };
     return { dot: "bg-purple-500", bg: "bg-purple-50/40", text: "text-slate-700" };
+  };
+
+  const getRelativeTime = (isoStr) => {
+    if (!isoStr) return "";
+    const diff = Math.floor((Date.now() - new Date(isoStr).getTime()) / 1000);
+    if (diff < 60) return "Just now";
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+    return `${Math.floor(diff / 86400)}d ago`;
   };
 
   return (
     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-      {/* Left: Date Filter */}
-      <select
-        value={dateRange}
-        onChange={(e) => setDateRange(e.target.value)}
-        className="px-4 py-3 glass rounded-2xl text-slate-700 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-purple-500/50 cursor-pointer transition-all appearance-none pr-10 bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%236b7280%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E')] bg-no-repeat bg-[length:10px_10px] bg-[right_16px_center]"
-      >
-        <option value="all">All Time Overview</option>
-        <option value="this_month">This Month</option>
-        <option value="last_30_days">Last 30 Days</option>
-        <option value="last_7_days">Last 7 Days</option>
-      </select>
+      {/* Left: Date Filter + Quick Presets */}
+      <div className="flex flex-wrap items-center gap-2">
+        <select
+          value={dateRange}
+          onChange={(e) => setDateRange(e.target.value)}
+          className="px-4 py-3 glass rounded-2xl text-slate-700 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-purple-500/50 cursor-pointer transition-all appearance-none pr-10 bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%236b7280%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E')] bg-no-repeat bg-[length:10px_10px] bg-[right_16px_center]"
+        >
+          <option value="all">All Time Overview</option>
+          <option value="this_month">This Month</option>
+          <option value="last_30_days">Last 30 Days</option>
+          <option value="last_7_days">Last 7 Days</option>
+        </select>
+        {/* Quick preset pills */}
+        {["all", "this_month", "last_30_days", "last_7_days"].map((val, i) => {
+          const labels = ["All", "This Month", "Last 30d", "Last 7d"];
+          return (
+            <button
+              key={val}
+              onClick={() => setDateRange(val)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                dateRange === val
+                  ? "bg-purple-600 text-white shadow-sm shadow-purple-200"
+                  : "glass text-slate-500 hover:text-purple-600"
+              }`}
+            >
+              {labels[i]}
+            </button>
+          );
+        })}
+      </div>
 
       {/* Right: Bell + Avatar + Logout */}
       <div className="flex items-center gap-3 relative" ref={popupRef}>
@@ -96,12 +125,19 @@ export default function Header() {
             <div className="max-h-[420px] overflow-y-auto divide-y divide-slate-50">
               {notifications && notifications.length > 0 ? (
                 notifications.map((notif, idx) => {
+                  const text = typeof notif === 'string' ? notif : notif.text;
+                  const ts = typeof notif === 'object' ? notif.ts : null;
                   const style = getNotifStyle(notif);
                   return (
                     <div key={idx} className={`p-4 hover:brightness-95 transition-all text-sm ${style.bg}`}>
                       <div className="flex items-start gap-3">
                         <span className={`mt-1.5 w-2 h-2 flex-shrink-0 rounded-full ${style.dot} shadow-[0_0_6px_currentColor]`}></span>
-                        <p className={`leading-snug ${style.text}`}>{notif}</p>
+                        <div className="flex-1 min-w-0">
+                          <p className={`leading-snug ${style.text}`}>{text}</p>
+                          {ts && (
+                            <p className="text-xs text-slate-400 mt-1">{getRelativeTime(ts)}</p>
+                          )}
+                        </div>
                       </div>
                     </div>
                   );
