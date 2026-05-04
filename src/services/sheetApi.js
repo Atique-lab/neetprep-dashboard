@@ -36,31 +36,23 @@ export async function fetchNewCentreShare() {
 }
 
 export async function fetchLastSessionEnrolments() {
-  const LAST_SESSION_DOC_ID = "1Jw3em-neeh8A16_nYyQ5lf_PjAGc0ybM0LEHEWLGHGk";
-  const GID = "739726484";
+  try {
+    // Published CSV URL (File > Share > Publish to web > CSV)
+    const PUBLISHED_URL =
+      "https://docs.google.com/spreadsheets/d/e/2PACX-1vT4cMEDg9HDTf1W786dR8KGQto8XJxUqvqt0Ii5bIyCeiCZm7p6XtbjS_rGiZ46tQwZ2SK4d6uO2bvj/pub?gid=739726484&single=true&output=csv";
 
-  // Try pub URL first (works when sheet is shared "Anyone with link" without needing Publish to web)
-  const urls = [
-    `https://docs.google.com/spreadsheets/d/${LAST_SESSION_DOC_ID}/pub?output=csv&gid=${GID}`,
-    `https://docs.google.com/spreadsheets/d/${LAST_SESSION_DOC_ID}/export?format=csv&gid=${GID}`,
-  ];
+    const res = await fetch(PUBLISHED_URL);
+    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+    const text = await res.text();
 
-  for (const url of urls) {
-    try {
-      const res = await fetch(url);
-      if (!res.ok) continue;
-      const text = await res.text();
-      return new Promise((resolve, reject) => {
-        Papa.parse(text, {
-          complete: (results) => resolve(results.data),
-          error: (error) => reject(error),
-        });
+    return new Promise((resolve, reject) => {
+      Papa.parse(text, {
+        complete: (results) => resolve(results.data),
+        error: (error) => reject(error),
       });
-    } catch (e) {
-      // try next URL
-    }
+    });
+  } catch (error) {
+    console.warn("Could not load Last Session data:", error);
+    return [];
   }
-
-  console.warn("Could not load Last Session Enrolments data from any URL");
-  return [];
 }
