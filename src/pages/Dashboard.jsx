@@ -2,10 +2,11 @@ import { motion } from "framer-motion";
 import { DollarSign, Users, TrendingUp, AlertCircle } from "lucide-react";
 import KPICard from "../components/KPICard";
 import RevenueChart from "../components/RevenueChart";
+import DailyComparisonChart from "../components/DailyComparisonChart";
 import { useDashboardData } from "../hooks/useDashboardData";
 
 export default function Dashboard() {
-  const { kpi, insights, monthlyData, rawData, loading, error } = useDashboardData();
+  const { kpi, insights, monthlyData, dailyComparison, rawData, loading, error } = useDashboardData();
 
   if (error) {
     return (
@@ -29,6 +30,7 @@ export default function Dashboard() {
             <div key={i} className="glass rounded-[2rem] h-40 w-full"></div>
           ))}
         </div>
+        <div className="glass rounded-[2rem] h-96 w-full mt-6"></div>
         <div className="glass rounded-[2rem] h-96 w-full mt-6"></div>
         <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
           {[...Array(3)].map((_, i) => (
@@ -95,9 +97,19 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* Chart */}
-      <div className="glass p-6 md:p-8 rounded-[2rem] transition-all hover:shadow-lg hover:shadow-purple-500/5 group">
-        <RevenueChart monthlyData={monthlyData} rawData={rawData} />
+      {/* Charts */}
+      <div className="grid grid-cols-1 gap-6">
+        <div className="glass p-6 md:p-8 rounded-[2rem] transition-all hover:shadow-lg hover:shadow-purple-500/5 group">
+          <RevenueChart monthlyData={monthlyData} rawData={rawData} />
+        </div>
+        
+        <div className="glass p-6 md:p-8 rounded-[2rem] transition-all hover:shadow-lg hover:shadow-purple-500/5 group">
+          <DailyComparisonChart 
+            dailyData={dailyComparison} 
+            currentMonthName={kpi.currentMonthName || "This Month"}
+            prevMonthName={kpi.prevMonthName || "Last Month"}
+          />
+        </div>
       </div>
 
       {/* Insights */}

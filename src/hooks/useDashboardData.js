@@ -147,6 +147,28 @@ export function useDashboardData() {
     const total = dayData.reduce((sum, d) => sum + d.revenue, 0);
     const avg = dayData.length > 0 ? total / dayData.length : 0;
 
+    // Daily Comparison Logic (This Month vs Last Month)
+    const dailyComparison = Array.from({ length: 31 }, (_, i) => ({
+      day: (i + 1).toString(),
+      currentRevenue: 0,
+      lastRevenue: 0
+    }));
+
+    processed.forEach(d => {
+      const month = getMonth(d.date);
+      if (!d.date) return;
+      const dayStr = d.date.split("-")[0];
+      const day = parseInt(dayStr, 10);
+      
+      if (!isNaN(day) && day >= 1 && day <= 31) {
+        if (month === currentMonthName) {
+          dailyComparison[day - 1].currentRevenue += d.revenue;
+        } else if (month === prevMonthName) {
+          dailyComparison[day - 1].lastRevenue += d.revenue;
+        }
+      }
+    });
+
     // Advanced Insights & Notifications
     const managerMap = {};
     const courseMap = {};
@@ -210,6 +232,8 @@ export function useDashboardData() {
         currentSessionRev: totalRevenueAll,
         lastSessionRev: totalLastSessionRevenue,
         sessionGrowth,
+        currentMonthName,
+        prevMonthName,
       },
       insights: {
         bestDay: bestDay?.date || "-",
@@ -223,6 +247,7 @@ export function useDashboardData() {
       },
       notifications: notifs,
       monthlyData,
+      dailyComparison, // Export new Daily Comparison data
     });
   }, [filteredData, extraData, loading, error]);
 
