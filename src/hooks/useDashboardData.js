@@ -6,10 +6,17 @@ export function useDashboardData() {
   const [data, setData] = useState({
     kpi: {
       students: 0,
-      currentRevenue: 0,
-      prevRevenue: 0,
-      totalRevenue: 0,
-      growth: 0,
+      currentMonthRev: 0,
+      lastMonthRev: 0,
+      monthlyGrowth: 0,
+      currentSessionRev: 0,
+      lastSessionRev: 0,
+      sessionGrowth: 0,
+      currentMonthName: "",
+      prevMonthName: "",
+      lastSessionStudents: 0,
+      enrolmentGrowth: 0,
+      revenueGrowthVsLastSession: 0,
     },
     insights: {
       bestDay: "-",
@@ -20,9 +27,14 @@ export function useDashboardData() {
       topManager: "-",
       topCourse: "-",
       topCentre: "-",
+      yesterdayExternal: 0,
+      yesterdayInternal: 0,
+      yesterdayTotal: 0,
+      yesterdayLabel: "-",
     },
     notifications: [],
     monthlyData: [],
+    dailyComparison: [],
   });
 
   useEffect(() => {
@@ -39,7 +51,7 @@ export function useDashboardData() {
       if (!dateStr) return null;
       const parts = dateStr.split("-");
       if (parts.length >= 2) {
-        return parts[1].trim(); // e.g., "Mar" from "1-Mar - 26" or "1-Mar"
+        return parts[1].trim();
       }
       return null;
     };
@@ -50,22 +62,22 @@ export function useDashboardData() {
         date: row[1],
         revenue: parseNumber(row[11]),
         neetprep: parseNumber(row[20]),
+        type: (row[12] || "").toString().trim(), // Internal/External col index 12
       })).filter(row => row.date);
     };
 
     const processed = processRows(filteredData);
-    const lastSessionProcessed = processRows(extraData?.lastSession || []);
+    const lastSessionRows = extraData?.lastSession || [];
+    const lastSessionProcessed = processRows(lastSessionRows);
 
-    // We want the X-axis to represent the chronological flow of a session.
-    // Last Session: May -> Apr. Current Session: Mar -> Apr (14 months).
-    // To align them nicely, we use the standard academic months starting from March.
     const monthsOrder = [
-      "Mar", "Apr", "May", "Jun", "Jul", "Aug", 
+      "Mar", "Apr", "May", "Jun", "Jul", "Aug",
       "Sep", "Oct", "Nov", "Dec", "Jan", "Feb"
     ];
 
     const totalRevenueAll = processed.reduce((sum, d) => sum + d.revenue, 0);
     const totalLastSessionRevenue = lastSessionProcessed.reduce((sum, d) => sum + d.revenue, 0);
+    const lastSessionStudents = lastSessionProcessed.length;
 
     const monthlyMap = {};
     const lastMonthlyMap = {};
@@ -92,7 +104,6 @@ export function useDashboardData() {
         lastRevenue: lastMonthlyMap[m] || 0,
       }));
 
-    // Find current month dynamically
     const currentMonthData = monthlyData[monthlyData.length - 1];
     const prevMonthData = monthlyData[monthlyData.length - 2];
     const currentMonthName = currentMonthData?.month;
@@ -129,23 +140,18 @@ export function useDashboardData() {
       monthlyGrowth = ((currentRevenue - prevRevenue) / prevRevenue) * 100;
     }
 
-    const dayMap = {};
-    processed.forEach((d) => {
-      if (!d.date) return;
-      if (!dayMap[d.date]) dayMap[d.date] = 0;
-      dayMap[d.date] += d.neetprep;
-    });
+    // Enrolment Growth vs Last Session
+    const enrolmentGrowth = lastSessionStudents > 0
+      ? (((processed.length - lastSessionStudents) / lastSessionStudents) * 100)
+      : 0;
 
-    const dayData = Object.keys(dayMap).map((date) => ({
-      date,
-      revenue: dayMap[date],
-    }));
-
-    const sorted = [...dayData].sort((a, b) => b.revenue - a.revenue);
-    const bestDay = sorted[0];
-    const worstDay = sorted[sorted.length - 1];
-    const total = dayData.reduce((sum, d) => sum + d.revenue, 0);
-    const avg = dayData.length > 0 ? total / dayData.length : 0;
+    // Revenue Growth vs Last Session (YTD equivalent — months elapsed in current session)
+    // Current session starts Mar. Count how many months have data.
+    const currentSessionMonths = monthsOrder.filter(m => monthlyMap[m] !== undefined);
+    const lastSessionYTDRevenue = currentSessionMonths.reduce((sum, m) => sum + (lastMonthlyMap[m] || 0), 0);
+    const revenueGrowthVsLastSession = lastSessionYTDRevenue > 0
+      ? (((totalRevenueAll - lastSessionYTDRevenue) / lastSessionYTDRevenue) * 100)
+      : 0;
 
     // Daily Comparison Logic (This Month vs Last Month)
     const dailyComparison = Array.from({ length: 31 }, (_, i) => ({
@@ -159,7 +165,6 @@ export function useDashboardData() {
       if (!d.date) return;
       const dayStr = d.date.split("-")[0];
       const day = parseInt(dayStr, 10);
-      
       if (!isNaN(day) && day >= 1 && day <= 31) {
         if (month === currentMonthName) {
           dailyComparison[day - 1].currentRevenue += d.revenue;
@@ -169,6 +174,29 @@ export function useDashboardData() {
       }
     });
 
+    // Yesterday Enrolments (External / Internal / Total)
+    const today = new Date();
+    const yesterday = new Date();
+    yesterday.setDate(today.getDate() - 1);
+    const yday = yesterday.getDate();
+    const ymonth = yesterday.toLocaleString('default', { month: 'short' });
+    const yyear = String(yesterday.getFullYear()).slice(-2);
+    const yesterdayLabel = `${yday}-${ymonth} - ${yyear}`;
+
+    let yesterdayExternal = 0;
+    let yesterdayInternal = 0;
+    const validRows = filteredData.slice(1).filter(r => r[1]);
+
+    validRows.forEach(row => {
+      if (row[1] === yesterdayLabel) {
+        const type = (row[12] || "").toString().trim().toLowerCase();
+        if (type === "external") yesterdayExternal++;
+        else if (type === "internal") yesterdayInternal++;
+      }
+    });
+
+    const yesterdayTotal = yesterdayExternal + yesterdayInternal;
+
     // Advanced Insights & Notifications
     const managerMap = {};
     const courseMap = {};
@@ -176,41 +204,37 @@ export function useDashboardData() {
     const notifs = [];
     let zeroPaidStudents = 0;
 
-    const validRows = filteredData.slice(1).filter(r => r[1]);
     validRows.forEach(row => {
-       const date = row[1];
-       const name = row[2];
-       const course = row[7];
-       const amount = parseNumber(row[11]);
-       const centre = row[6];
-       const manager = row[21];
-       const centreShare = parseNumber(row[17]);
+      const name = row[2];
+      const course = row[7];
+      const amount = parseNumber(row[11]);
+      const centre = row[6];
+      const manager = row[21];
+      const centreShare = parseNumber(row[17]);
 
-       if (amount === 0) zeroPaidStudents++;
-       if (amount > 0 && centreShare === 0 && centre) {
-         if (notifs.length < 20) {
-            notifs.push(`Zero Centre Share for student ${name || 'Unknown'} at ${centre}`);
-         }
-       }
+      if (amount === 0) zeroPaidStudents++;
+      if (amount > 0 && centreShare === 0 && centre) {
+        if (notifs.length < 20) {
+          notifs.push(`Zero Centre Share for student ${name || 'Unknown'} at ${centre}`);
+        }
+      }
 
-       if (manager) managerMap[manager] = (managerMap[manager] || 0) + amount;
-       if (course) courseMap[course] = (courseMap[course] || 0) + amount;
-       if (centre) centreMap[centre] = (centreMap[centre] || 0) + amount;
+      if (manager) managerMap[manager] = (managerMap[manager] || 0) + amount;
+      if (course) courseMap[course] = (courseMap[course] || 0) + amount;
+      if (centre) centreMap[centre] = (centreMap[centre] || 0) + amount;
     });
 
     if (zeroPaidStudents > 0) {
       notifs.unshift(`Alert: ${zeroPaidStudents} Zero Paid Student(s) detected.`);
     }
 
-    const today = new Date();
-    const last7Days = Array.from({length: 7}, (_, i) => {
-       const d = new Date();
-       d.setDate(today.getDate() - i);
-       const day = d.getDate(); // 1, 2, ...
-       const month = d.toLocaleString('default', { month: 'short' });
-       const year = String(d.getFullYear()).slice(-2);
-       // Format matching the CSV: "1-May - 26"
-       return `${day}-${month} - ${year}`;
+    const last7Days = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date();
+      d.setDate(today.getDate() - i);
+      const day = d.getDate();
+      const month = d.toLocaleString('default', { month: 'short' });
+      const year = String(d.getFullYear()).slice(-2);
+      return `${day}-${month} - ${year}`;
     });
 
     const enrolledDates = new Set(validRows.map(r => r[1]));
@@ -219,9 +243,23 @@ export function useDashboardData() {
       notifs.unshift(`Warning: Zero Enrolment on ${zeroEnrolmentDays.join(', ')}`);
     }
 
-    const topManager = Object.keys(managerMap).sort((a,b) => managerMap[b] - managerMap[a])[0] || "-";
-    const topCourse = Object.keys(courseMap).sort((a,b) => courseMap[b] - courseMap[a])[0] || "-";
-    const topCentre = Object.keys(centreMap).sort((a,b) => centreMap[b] - centreMap[a])[0] || "-";
+    const dayMap = {};
+    processed.forEach((d) => {
+      if (!d.date) return;
+      if (!dayMap[d.date]) dayMap[d.date] = 0;
+      dayMap[d.date] += d.neetprep;
+    });
+
+    const dayData = Object.keys(dayMap).map((date) => ({ date, revenue: dayMap[date] }));
+    const sorted = [...dayData].sort((a, b) => b.revenue - a.revenue);
+    const bestDay = sorted[0];
+    const worstDay = sorted[sorted.length - 1];
+    const total = dayData.reduce((sum, d) => sum + d.revenue, 0);
+    const avg = dayData.length > 0 ? total / dayData.length : 0;
+
+    const topManager = Object.keys(managerMap).sort((a, b) => managerMap[b] - managerMap[a])[0] || "-";
+    const topCourse = Object.keys(courseMap).sort((a, b) => courseMap[b] - courseMap[a])[0] || "-";
+    const topCentre = Object.keys(centreMap).sort((a, b) => centreMap[b] - centreMap[a])[0] || "-";
 
     setData({
       kpi: {
@@ -234,6 +272,9 @@ export function useDashboardData() {
         sessionGrowth,
         currentMonthName,
         prevMonthName,
+        lastSessionStudents,
+        enrolmentGrowth,
+        revenueGrowthVsLastSession,
       },
       insights: {
         bestDay: bestDay?.date || "-",
@@ -244,12 +285,18 @@ export function useDashboardData() {
         topManager,
         topCourse,
         topCentre,
+        yesterdayExternal,
+        yesterdayInternal,
+        yesterdayTotal,
+        yesterdayLabel,
       },
       notifications: notifs,
       monthlyData,
-      dailyComparison, // Export new Daily Comparison data
+      dailyComparison,
     });
   }, [filteredData, extraData, loading, error]);
 
   return { ...data, rawData, filteredData, extraData, loading, error };
 }
+
+
