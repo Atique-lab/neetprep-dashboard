@@ -37,7 +37,22 @@ export async function fetchNewCentreShare() {
 
 export async function fetchLastSessionEnrolments() {
   try {
-    return await fetchCSVData("971410532"); // Last Session Enrolments
+    const LAST_SESSION_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT4cMEDg9HDTf1W786dR8KGQto8XJxUqvqt0Ii5bIyCeiCZm7p6XtbjS_rGiZ46tQwZ2SK4d6uO2bvj/pub?gid=739726484&single=true&output=csv";
+    const res = await fetch(LAST_SESSION_URL);
+    if (!res.ok) {
+      throw new Error(`HTTP error! status: ${res.status}`);
+    }
+    const text = await res.text();
+    return new Promise((resolve, reject) => {
+      Papa.parse(text, {
+        complete: (results) => {
+          resolve(results.data);
+        },
+        error: (error) => {
+          reject(error);
+        }
+      });
+    });
   } catch (error) {
     console.warn("Could not load Last Session Enrolments data:", error);
     return [];

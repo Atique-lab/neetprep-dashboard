@@ -23,6 +23,7 @@ export function useDashboardData() {
     },
     notifications: [],
     monthlyData: [],
+    dayWiseComparison: [],
   });
 
   useEffect(() => {
@@ -167,6 +168,38 @@ export function useDashboardData() {
     const topCourse = Object.keys(courseMap).sort((a,b) => courseMap[b] - courseMap[a])[0] || "-";
     const topCentre = Object.keys(centreMap).sort((a,b) => centreMap[b] - centreMap[a])[0] || "-";
 
+    // --- Day Wise Comparison logic ---
+    const lastSessionDayMap = {};
+    if (extraData?.lastSession?.length > 1) {
+      extraData.lastSession.slice(1).forEach(row => {
+        const dateStr = row[1];
+        const rev = parseNumber(row[11]);
+        if (dateStr) {
+          if (!lastSessionDayMap[dateStr]) lastSessionDayMap[dateStr] = 0;
+          lastSessionDayMap[dateStr] += rev;
+        }
+      });
+    }
+
+    const currentDayRevMap = {};
+    processed.forEach(d => {
+      if (!d.date) return;
+      if (!currentDayRevMap[d.date]) currentDayRevMap[d.date] = 0;
+      currentDayRevMap[d.date] += d.revenue;
+    });
+
+    const allDatesSet = new Set([...Object.keys(currentDayRevMap), ...Object.keys(lastSessionDayMap)]);
+    const dayWiseComparison = Array.from(allDatesSet).map(dateStr => ({
+      date: dateStr,
+      currentRevenue: currentDayRevMap[dateStr] || 0,
+      lastSessionRevenue: lastSessionDayMap[dateStr] || 0,
+    })).sort((a, b) => {
+       const da = new Date(`${a.date} 2026`);
+       const db = new Date(`${b.date} 2026`);
+       return da - db;
+    });
+    // ---------------------------------
+
     setData({
       kpi: {
         students: processed.length,
@@ -187,8 +220,9 @@ export function useDashboardData() {
       },
       notifications: notifs,
       monthlyData,
+      dayWiseComparison,
     });
-  }, [filteredData, loading, error]);
+  }, [filteredData, loading, error, extraData.lastSession]);
 
   // Keep returning rawData so components that need the master dataset still have it
   return { ...data, rawData, filteredData, extraData, loading, error };
