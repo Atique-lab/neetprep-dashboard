@@ -1,20 +1,16 @@
 import { useState, useMemo, useEffect } from "react";
 import { useDashboardData } from "../hooks/useDashboardData";
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
 } from "recharts";
-import { AlertCircle, Search, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Download, Users } from "lucide-react";
+import { AlertCircle, Search, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Download, Users, TrendingUp, TrendingDown } from "lucide-react";
 import { exportToCSV } from "../utils/exportToCSV";
 import { Link } from "react-router-dom";
 
 export default function Centres() {
-  const { filteredData, extraData, loading, error } = useDashboardData();
-  const { newCentreShare, lastSession } = extraData || {};
+  const { filteredData, extraData, lastSessionComparison, loading, error } = useDashboardData();
+  const { newCentreShare } = extraData || {};
+  const lsCentreMap = lastSessionComparison?.centreMap || {};
 
   const [showAllCentres, setShowAllCentres] = useState(false);
 
@@ -23,18 +19,6 @@ export default function Centres() {
     if (typeof val === "number") return val;
     return Number(val.replace(/,/g, "")) || 0;
   };
-
-  const lastYearStudentsMap = useMemo(() => {
-    const map = {};
-    if (lastSession && lastSession.length > 1) {
-        lastSession.slice(1).forEach(row => {
-            const name = row[0]?.trim();
-            const count = parseInt(row[4], 10) || 0; // Index 4 is Grand Total
-            if (name) map[name] = count;
-        });
-    }
-    return map;
-  }, [lastSession]);
 
   const newShareMap = useMemo(() => {
     const map = {};
@@ -97,13 +81,17 @@ export default function Centres() {
     }
 
     const centreData = allCentresKeys.map(name => {
-      const data = centreMap[name] || {
-          name, revenue: 0, students: 0, internal: 0, external: 0, neetprepShare: 0, centreShare: 0
+      const d = centreMap[name] || {
+        name, revenue: 0, students: 0, internal: 0, external: 0, neetprepShare: 0, centreShare: 0
       };
-      data.sharePercent = newShareMap[name] || 0;
-      data.lastYearStudents = lastYearStudentsMap[name] || 0;
-      data.studentGrowth = data.lastYearStudents > 0 ? ((data.students - data.lastYearStudents) / data.lastYearStudents) * 100 : 0;
-      return data;
+      d.sharePercent = newShareMap[name] || 0;
+      // Use lastSessionComparison for per-centre comparison
+      const lsData = lsCentreMap[name];
+      d.lastStudents = lsData?.students || 0;
+      d.lastRevenue  = lsData?.revenue  || 0;
+      d.studentGrowth = d.lastStudents > 0 ? ((d.students - d.lastStudents) / d.lastStudents) * 100 : null;
+      d.revenueGrowth = d.lastRevenue  > 0 ? ((d.revenue  - d.lastRevenue)  / d.lastRevenue)  * 100 : null;
+      return d;
     }).sort((a, b) => b.revenue - a.revenue);
 
     const activeCentres = centreData.filter(c => c.revenue > 0);
@@ -115,7 +103,7 @@ export default function Centres() {
     const avg = total > 0 ? totalRevenue / total : 0;
 
     return { centres: centreData, kpi: { total, top, topRevenue, avg } };
-  }, [filteredData, showAllCentres, lastYearStudentsMap, newShareMap]);
+  }, [filteredData, showAllCentres, lsCentreMap, newShareMap]);
 
   // Interactivity States
   const [searchQuery, setSearchQuery] = useState("");
@@ -291,16 +279,25 @@ export default function Centres() {
                   Centre Name {renderSortIcon('name')}
                 </th>
                 <th className="p-4 font-semibold text-right cursor-pointer hover:text-purple-600 transition" onClick={() => requestSort('external')}>
-                  Ext Students {renderSortIcon('external')}
+                  Ext {renderSortIcon('external')}
                 </th>
                 <th className="p-4 font-semibold text-right cursor-pointer hover:text-purple-600 transition" onClick={() => requestSort('internal')}>
-                  Int Students {renderSortIcon('internal')}
+                  Int {renderSortIcon('internal')}
                 </th>
                 <th className="p-4 font-semibold text-right cursor-pointer hover:text-purple-600 transition" onClick={() => requestSort('revenue')}>
-                  Total Revenue {renderSortIcon('revenue')}
+                  Revenue {renderSortIcon('revenue')}
+                </th>
+                <th className="p-4 font-semibold text-right text-slate-500" title="Last session students">
+                  Last Students
+                </th>
+                <th className="p-4 font-semibold text-right" title="Student growth vs last session">
+                  Student Δ
+                </th>
+                <th className="p-4 font-semibold text-right" title="Revenue growth vs last session">
+                  Revenue Δ
                 </th>
                 <th className="p-4 font-semibold text-right text-purple-600 cursor-pointer hover:text-purple-800 transition" onClick={() => requestSort('neetprepShare')}>
-                  Neetprep Share {renderSortIcon('neetprepShare')}
+                  Neetprep {renderSortIcon('neetprepShare')}
                 </th>
               </tr>
             </thead>
@@ -314,12 +311,27 @@ export default function Centres() {
                   </td>
                   <td className="p-4 text-right text-slate-600">{c.external || 0}</td>
                   <td className="p-4 text-right text-slate-600">{c.internal || 0}</td>
-                  <td className="p-4 text-right font-semibold text-slate-800">
-                    ₹{c.revenue.toLocaleString()}
+                  <td className="p-4 text-right font-semibold text-slate-800">₹{c.revenue.toLocaleString()}</td>
+                  <td className="p-4 text-right text-slate-400 text-sm">
+                    {c.lastStudents > 0 ? c.lastStudents : "—"}
                   </td>
-                  <td className="p-4 text-right font-bold text-purple-600">
-                    ₹{c.neetprepShare.toLocaleString()}
+                  <td className="p-4 text-right">
+                    {c.studentGrowth !== null ? (
+                      <span className={`text-xs font-semibold flex items-center justify-end gap-0.5 ${c.studentGrowth >= 0 ? "text-emerald-600" : "text-rose-500"}`}>
+                        {c.studentGrowth >= 0 ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
+                        {c.studentGrowth >= 0 ? "+" : ""}{c.studentGrowth.toFixed(1)}%
+                      </span>
+                    ) : <span className="text-xs text-slate-400">New</span>}
                   </td>
+                  <td className="p-4 text-right">
+                    {c.revenueGrowth !== null ? (
+                      <span className={`text-xs font-semibold flex items-center justify-end gap-0.5 ${c.revenueGrowth >= 0 ? "text-emerald-600" : "text-rose-500"}`}>
+                        {c.revenueGrowth >= 0 ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
+                        {c.revenueGrowth >= 0 ? "+" : ""}{c.revenueGrowth.toFixed(1)}%
+                      </span>
+                    ) : <span className="text-xs text-slate-400">New</span>}
+                  </td>
+                  <td className="p-4 text-right font-bold text-purple-600">₹{c.neetprepShare.toLocaleString()}</td>
                 </tr>
               )) : (
                 <tr>
