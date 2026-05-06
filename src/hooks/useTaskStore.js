@@ -43,26 +43,41 @@ export function useTaskStore(currentPath) {
     }
   });
 
-  // Reload from storage when user changes
-  useEffect(() => {
+  // Reload from storage when user changes or when another tab/script updates it
+  const refreshTasks = useCallback(() => {
     try {
-      setTasks(JSON.parse(localStorage.getItem(key) || "[]"));
+      const stored = JSON.parse(localStorage.getItem(key) || "[]");
+      setTasks(stored);
     } catch {
       setTasks([]);
     }
   }, [key]);
+
+  useEffect(() => {
+    refreshTasks();
+    
+    // Listen for changes from other tabs/processes
+    const handleStorageChange = (e) => {
+      if (e.key === key) refreshTasks();
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [key, refreshTasks]);
 
   // Persist on every change
   useEffect(() => {
     localStorage.setItem(key, JSON.stringify(tasks));
   }, [tasks, key]);
 
-  const addTask = useCallback((text, context = null) => {
-    if (!text.trim()) return;
+  const addTask = useCallback((taskData, context = null) => {
+    // taskData: { text, type, priority, relatedTo, dueDate }
+    if (!taskData.text?.trim()) return;
+    
     setTasks(prev => [
       {
         id: Date.now(),
-        text: text.trim(),
+        ...taskData,
+        text: taskData.text.trim(),
         completed: false,
         createdAt: new Date().toISOString(),
         context, // page path this task belongs to, or null for global
@@ -71,8 +86,8 @@ export function useTaskStore(currentPath) {
     ]);
   }, []);
 
-  const sendTaskToUser = useCallback((toUsername, text, fromName) => {
-    if (!toUsername || !text.trim()) return;
+  const sendTaskToUser = useCallback((toUsername, taskData, fromName) => {
+    if (!toUsername || !taskData.text?.trim()) return;
     const targetKey = getKey(toUsername);
     let targetTasks = [];
     try {
@@ -83,13 +98,18 @@ export function useTaskStore(currentPath) {
 
     const newTask = {
       id: Date.now(),
-      text: `${text.trim()} (Assigned by ${fromName})`,
+      ...taskData,
+      text: `${taskData.text.trim()}`,
+      assignedBy: fromName,
       completed: false,
       createdAt: new Date().toISOString(),
       context: "assigned",
     };
 
     localStorage.setItem(targetKey, JSON.stringify([newTask, ...targetTasks]));
+    
+    // Trigger storage event manually for the current window if testing in same tab
+    window.dispatchEvent(new StorageEvent('storage', { key: targetKey }));
   }, []);
 
   const toggleTask = useCallback((id) => {
@@ -105,7 +125,6 @@ export function useTaskStore(currentPath) {
   }, []);
 
   const suggestions = PAGE_SUGGESTIONS[currentPath] || [];
-  // Only show suggestions not already added as tasks
   const unusedSuggestions = suggestions.filter(
     s => !tasks.some(t => t.text === s)
   );
