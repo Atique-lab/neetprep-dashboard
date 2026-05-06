@@ -5,7 +5,7 @@ import {
   CheckSquare, X, Plus, Trash2, Lightbulb, CheckCheck, 
   User, Shield, Key, Image as ImageIcon, ClipboardList, 
   Settings, Users, Briefcase, ChevronRight, Info, Send,
-  AlertCircle, Tag, Calendar as CalendarIcon, MapPin
+  AlertCircle, Tag, Calendar as CalendarIcon, MapPin, RefreshCw
 } from "lucide-react";
 import { useTaskStore } from "../hooks/useTaskStore";
 import { useAuth } from "../context/AuthContext";
@@ -40,7 +40,7 @@ export default function UserSpace() {
   const inputRef = useRef(null);
   const fileInputRef = useRef(null);
 
-  const { tasks, addTask, sendTaskToUser, toggleTask, deleteTask, clearCompleted, suggestions, pendingCount } =
+  const { tasks, addTask, sendTaskToUser, toggleTask, deleteTask, clearCompleted, suggestions, pendingCount, loading } =
     useTaskStore(location.pathname);
 
   useEffect(() => {
@@ -193,7 +193,12 @@ export default function UserSpace() {
                    )}
                 </div>
 
-                {pendingTasks.length > 0 ? (
+                {loading ? (
+                  <div className="py-20 text-center text-slate-400">
+                     <RefreshCw size={32} className="mx-auto mb-4 animate-spin opacity-20" />
+                     <p className="text-sm font-medium">Syncing with Supabase...</p>
+                  </div>
+                ) : pendingTasks.length > 0 ? (
                   pendingTasks.map(task => <TaskItem key={task.id} task={task} onToggle={toggleTask} onDelete={deleteTask} />)
                 ) : tasks.length === 0 ? (
                   <div className="py-16 text-center glass rounded-[2rem]">

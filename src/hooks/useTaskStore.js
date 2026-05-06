@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../context/AuthContext";
-
-const getKey = (username) => `tasks_${username || "guest"}`;
+import { supabase } from "../lib/supabase";
 
 const PAGE_SUGGESTIONS = {
   "/": [
@@ -33,105 +32,143 @@ const PAGE_SUGGESTIONS = {
 
 export function useTaskStore(currentPath) {
   const { user } = useAuth();
-  const key = getKey(user?.username);
+  const [tasks, setTasks] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const [tasks, setTasks] = useState(() => {
+  const fetchTasks = useCallback(async () => {
+    if (!user) return;
+    setLoading(true);
     try {
-      return JSON.parse(localStorage.getItem(key) || "[]");
-    } catch {
-      return [];
-    }
-  });
+      const { data, error } = await supabase
+        .from('tasks')
+        .select('*')
+        .eq('assigned_to', user.name)
+        .order('created_at', { ascending: false });
 
-  // Reload from storage when user changes or when another tab/script updates it
-  const refreshTasks = useCallback(() => {
-    try {
-      const stored = JSON.parse(localStorage.getItem(key) || "[]");
-      setTasks(stored);
-    } catch {
-      setTasks([]);
+      if (error) throw error;
+      setTasks(data || []);
+    } catch (err) {
+      console.error("Error fetching tasks:", err);
+    } finally {
+      setLoading(false);
     }
-  }, [key]);
+  }, [user]);
 
   useEffect(() => {
-    refreshTasks();
-    
-    // Listen for changes from other tabs/processes on the same machine
-    const handleStorageChange = (e) => {
-      if (e.key === key) refreshTasks();
-    };
-    
-    // Custom event for manual refresh from the UI (e.g., Header button)
-    const handleManualRefresh = () => refreshTasks();
+    fetchTasks();
 
-    window.addEventListener('storage', handleStorageChange);
+    // Subscribe to real-time changes
+    const channel = supabase
+      .channel('tasks_changes')
+      .on('postgres_changes', { event: '*', table: 'tasks', filter: `assigned_to=eq.${user?.name}` }, () => {
+        fetchTasks();
+      })
+      .subscribe();
+
+    // Listen for manual refresh events from Header
+    const handleManualRefresh = () => fetchTasks();
     window.addEventListener('refresh-tasks', handleManualRefresh);
 
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
+      supabase.removeChannel(channel);
       window.removeEventListener('refresh-tasks', handleManualRefresh);
     };
-  }, [key, refreshTasks]);
+  }, [user, fetchTasks]);
 
-  // Persist on every change
-  useEffect(() => {
-    localStorage.setItem(key, JSON.stringify(tasks));
-  }, [tasks, key]);
-
-  const addTask = useCallback((taskData, context = null) => {
-    // taskData: { text, type, priority, relatedTo, dueDate }
-    if (!taskData.text?.trim()) return;
+  const addTask = useCallback(async (taskData) => {
+    if (!user || !taskData.text?.trim()) return;
     
-    setTasks(prev => [
-      {
-        id: Date.now(),
-        ...taskData,
-        text: taskData.text.trim(),
-        completed: false,
-        createdAt: new Date().toISOString(),
-        context, // page path this task belongs to, or null for global
-      },
-      ...prev,
-    ]);
-  }, []);
-
-  const sendTaskToUser = useCallback((toUsername, taskData, fromName) => {
-    if (!toUsername || !taskData.text?.trim()) return;
-    const targetKey = getKey(toUsername);
-    let targetTasks = [];
     try {
-      targetTasks = JSON.parse(localStorage.getItem(targetKey) || "[]");
-    } catch {
-      targetTasks = [];
+      const { error } = await supabase
+        .from('tasks')
+        .insert([{
+          text: taskData.text.trim(),
+          type: taskData.type,
+          priority: taskData.priority,
+          related_to: taskData.relatedTo,
+          due_date: taskData.dueDate,
+          assigned_to: user.name,
+          assigned_by: user.name,
+          completed: false
+        }]);
+
+      if (error) throw error;
+      fetchTasks();
+    } catch (err) {
+      console.error("Error adding task:", err);
     }
+  }, [user, fetchTasks]);
 
-    const newTask = {
-      id: Date.now(),
-      ...taskData,
-      text: `${taskData.text.trim()}`,
-      assignedBy: fromName,
-      completed: false,
-      createdAt: new Date().toISOString(),
-      context: "assigned",
-    };
-
-    localStorage.setItem(targetKey, JSON.stringify([newTask, ...targetTasks]));
+  const sendTaskToUser = useCallback(async (toUsername, taskData, fromName) => {
+    if (!toUsername || !taskData.text?.trim()) return;
     
-    // Trigger storage event manually for the current window if testing in same tab
-    window.dispatchEvent(new StorageEvent('storage', { key: targetKey }));
-  }, []);
+    try {
+      const { error } = await supabase
+        .from('tasks')
+        .insert([{
+          text: taskData.text.trim(),
+          type: taskData.type,
+          priority: taskData.priority,
+          related_to: taskData.relatedTo,
+          assigned_to: toUsername,
+          assigned_by: fromName,
+          completed: false
+        }]);
 
-  const toggleTask = useCallback((id) => {
-    setTasks(prev => prev.map(t => t.id === id ? { ...t, completed: !t.completed } : t));
-  }, []);
+      if (error) throw error;
+      // If we assigned to ourselves, refresh. Otherwise, it doesn't affect our list.
+      if (toUsername === user?.name) fetchTasks();
+    } catch (err) {
+      console.error("Error sending task:", err);
+    }
+  }, [user, fetchTasks]);
 
-  const deleteTask = useCallback((id) => {
-    setTasks(prev => prev.filter(t => t.id !== id));
-  }, []);
+  const toggleTask = useCallback(async (id) => {
+    const task = tasks.find(t => t.id === id);
+    if (!task) return;
 
-  const clearCompleted = useCallback(() => {
-    setTasks(prev => prev.filter(t => !t.completed));
-  }, []);
+    try {
+      const { error } = await supabase
+        .from('tasks')
+        .update({ completed: !task.completed })
+        .eq('id', id);
+
+      if (error) throw error;
+      fetchTasks();
+    } catch (err) {
+      console.error("Error toggling task:", err);
+    }
+  }, [tasks, fetchTasks]);
+
+  const deleteTask = useCallback(async (id) => {
+    try {
+      const { error } = await supabase
+        .from('tasks')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      fetchTasks();
+    } catch (err) {
+      console.error("Error deleting task:", err);
+    }
+  }, [fetchTasks]);
+
+  const clearCompleted = useCallback(async () => {
+    if (!user) return;
+    try {
+      const { error } = await supabase
+        .from('tasks')
+        .delete()
+        .eq('assigned_to', user.name)
+        .eq('completed', true);
+
+      if (error) throw error;
+      fetchTasks();
+    } catch (err) {
+      console.error("Error clearing completed tasks:", err);
+    }
+  }, [user, fetchTasks]);
 
   const suggestions = PAGE_SUGGESTIONS[currentPath] || [];
   const unusedSuggestions = suggestions.filter(
@@ -148,6 +185,7 @@ export function useTaskStore(currentPath) {
     deleteTask, 
     clearCompleted, 
     suggestions: unusedSuggestions, 
-    pendingCount 
+    pendingCount,
+    loading
   };
 }

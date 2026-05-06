@@ -1,9 +1,8 @@
 import { createContext, useContext, useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
 
 const AuthContext = createContext();
 
-// Mid-level passwords — not based on usernames
-// Enriched with hierarchical info
 const USER_CREDENTIALS = {
   atique: { 
     password: 'Solar@2026',  
@@ -15,7 +14,7 @@ const USER_CREDENTIALS = {
   },
   himanshu: { 
     password: 'Orbit#91x',   
-    role: 'manager', // Changed to manager as per request "Only Atique has full access"
+    role: 'manager', 
     name: 'Himanshu', 
     title: 'Operations Manager', 
     reportsTo: 'Poonam, Praveen, Mukta, Gurpreet',
@@ -55,7 +54,7 @@ const USER_CREDENTIALS = {
   },
   kapil: { 
     password: 'Quasar$29',   
-    role: 'manager', // Changed from ceo to manager for permission grouping
+    role: 'manager', 
     name: 'Kapil', 
     title: 'CEO', 
     reportsTo: 'Board',
@@ -71,20 +70,44 @@ export function AuthProvider({ children }) {
 
   const [profileImage, setProfileImage] = useState(null);
 
-  // Load profile image when user changes
+  // Load profile image from Supabase
   useEffect(() => {
-    if (user) {
-      const img = localStorage.getItem(`profile_image_${user.name}`);
-      setProfileImage(img);
-    } else {
-      setProfileImage(null);
+    async function loadProfile() {
+      if (user) {
+        try {
+          const { data, error } = await supabase
+            .from('user_profiles')
+            .select('avatar_url')
+            .eq('username', user.name)
+            .single();
+          
+          if (data) setProfileImage(data.avatar_url);
+        } catch (err) {
+          console.error("Error loading profile image:", err);
+        }
+      } else {
+        setProfileImage(null);
+      }
     }
+    loadProfile();
   }, [user]);
 
-  const updateProfileImage = (dataUrl) => {
+  const updateProfileImage = async (dataUrl) => {
     if (user) {
-      localStorage.setItem(`profile_image_${user.name}`, dataUrl);
-      setProfileImage(dataUrl);
+      try {
+        const { error } = await supabase
+          .from('user_profiles')
+          .upsert({ 
+            username: user.name, 
+            avatar_url: dataUrl,
+            updated_at: new Date().toISOString()
+          });
+        
+        if (error) throw error;
+        setProfileImage(dataUrl);
+      } catch (err) {
+        console.error("Error updating profile image:", err);
+      }
     }
   };
 
