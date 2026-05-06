@@ -56,12 +56,21 @@ export function useTaskStore(currentPath) {
   useEffect(() => {
     refreshTasks();
     
-    // Listen for changes from other tabs/processes
+    // Listen for changes from other tabs/processes on the same machine
     const handleStorageChange = (e) => {
       if (e.key === key) refreshTasks();
     };
+    
+    // Custom event for manual refresh from the UI (e.g., Header button)
+    const handleManualRefresh = () => refreshTasks();
+
     window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+    window.addEventListener('refresh-tasks', handleManualRefresh);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('refresh-tasks', handleManualRefresh);
+    };
   }, [key, refreshTasks]);
 
   // Persist on every change

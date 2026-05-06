@@ -3,15 +3,16 @@ import { useNavigate } from "react-router-dom";
 import { useGlobalData } from "../context/DashboardContext";
 import { useAuth } from "../context/AuthContext";
 import { useDashboardData } from "../hooks/useDashboardData";
-import { Bell, LogOut, CheckCheck, Calendar, User, Shield, ExternalLink } from "lucide-react";
+import { Bell, LogOut, CheckCheck, Calendar, User, Shield, ExternalLink, RefreshCw } from "lucide-react";
 
 export default function Header() {
   const navigate = useNavigate();
-  const { dateRange, setDateRange } = useGlobalData();
+  const { dateRange, setDateRange, refreshData } = useGlobalData();
   const { user, logout } = useAuth();
   const { notifications } = useDashboardData();
   const [showNotifs, setShowNotifs] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [readCount, setReadCount] = useState(0);
   const popupRef = useRef(null);
   const profileRef = useRef(null);
@@ -58,6 +59,18 @@ export default function Header() {
   const handleAvatarClick = () => {
     setShowNotifs(false);
     setShowProfile(!showProfile);
+  };
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await refreshData();
+      // Also trigger a task refresh for the current window
+      window.dispatchEvent(new Event('refresh-tasks'));
+      setTimeout(() => setIsRefreshing(false), 1000);
+    } catch (err) {
+      setIsRefreshing(false);
+    }
   };
 
   const goToUserSpace = (tab = "tasks") => {
@@ -108,8 +121,18 @@ export default function Header() {
         </div>
       </div>
 
-      {/* Right: Bell + Avatar + Logout */}
+      {/* Right: Bell + Avatar + Refresh + Logout */}
       <div className="flex items-center gap-3 relative">
+
+        {/* Refresh Button */}
+        <button
+          onClick={handleRefresh}
+          className={`p-3 glass rounded-full text-slate-600 hover:text-emerald-600 transition-all ${isRefreshing ? 'rotate-180 text-emerald-600' : ''}`}
+          title="Refresh Data & Tasks"
+          disabled={isRefreshing}
+        >
+          <RefreshCw size={18} className={isRefreshing ? 'animate-spin' : ''} />
+        </button>
 
         {/* Bell */}
         <div className="relative" ref={popupRef}>
@@ -227,7 +250,7 @@ export default function Header() {
           )}
         </div>
 
-        {/* Simple Logout as fallback icon if needed */}
+        {/* Quick Logout */}
         <button
           onClick={logout}
           className="p-3 glass rounded-full text-slate-600 hover:text-rose-600 transition-colors hidden md:block"
