@@ -3,14 +3,64 @@ import { createContext, useContext, useState } from 'react';
 const AuthContext = createContext();
 
 // Mid-level passwords — not based on usernames
+// Enriched with hierarchical info
 const USER_CREDENTIALS = {
-  atique:   { password: 'Solar@2026',  role: 'admin',   name: 'Atique' },
-  himanshu: { password: 'Orbit#91x',   role: 'admin',   name: 'Himanshu' },
-  praveen:  { password: 'Meteor$47',   role: 'manager', name: 'Praveen' },
-  poonam:   { password: 'Galaxy!83k',  role: 'manager', name: 'Poonam' },
-  mukta:    { password: 'Nebula@52',   role: 'manager', name: 'Mukta' },
-  gurpreet: { password: 'Comet#76z',   role: 'manager', name: 'Gurpreet' },
-  kapil:    { password: 'Quasar$29',   role: 'manager', name: 'Kapil' },
+  atique: { 
+    password: 'Solar@2026',  
+    role: 'admin',   
+    name: 'Atique', 
+    title: 'Data & Dashboard Manager', 
+    reportsTo: 'Poonam, Praveen, Mukta, Gurpreet',
+    desc: 'Handles all task related to Data and Dashboard systems.'
+  },
+  himanshu: { 
+    password: 'Orbit#91x',   
+    role: 'admin',   
+    name: 'Himanshu', 
+    title: 'Operations Manager', 
+    reportsTo: 'Poonam, Praveen, Mukta, Gurpreet',
+    desc: 'Handles day-to-day operations across all centres.'
+  },
+  praveen: { 
+    password: 'Meteor$47',   
+    role: 'manager', 
+    name: 'Praveen', 
+    title: 'Accounts & Centre Manager', 
+    reportsTo: 'Kapil',
+    desc: 'Manages centre operations and handles accounts related works for all centres.'
+  },
+  poonam: { 
+    password: 'Galaxy!83k',  
+    role: 'manager', 
+    name: 'Poonam', 
+    title: 'Centre Manager', 
+    reportsTo: 'Kapil',
+    desc: 'Manages centre operations and performance.'
+  },
+  mukta: { 
+    password: 'Nebula@52',   
+    role: 'manager', 
+    name: 'Mukta', 
+    title: 'Centre Manager', 
+    reportsTo: 'Kapil',
+    desc: 'Manages centre operations and performance.'
+  },
+  gurpreet: { 
+    password: 'Comet#76z',   
+    role: 'manager', 
+    name: 'Gurpreet', 
+    title: 'Centre Manager', 
+    reportsTo: 'Kapil',
+    desc: 'Manages centre operations and performance.'
+  },
+  kapil: { 
+    password: 'Quasar$29',   
+    role: 'ceo',     
+    name: 'Kapil', 
+    title: 'CEO', 
+    reportsTo: 'Board',
+    desc: 'Managing the company directors and overall company strategy.'
+  },
 };
 
 export function AuthProvider({ children }) {
@@ -24,7 +74,14 @@ export function AuthProvider({ children }) {
     const cred = USER_CREDENTIALS[key];
 
     if (cred && password === cred.password) {
-      const loggedInUser = { role: cred.role, name: cred.name, username: cred.name };
+      const loggedInUser = { 
+        role: cred.role, 
+        name: cred.name, 
+        username: cred.name,
+        title: cred.title,
+        reportsTo: cred.reportsTo,
+        desc: cred.desc
+      };
       setUser(loggedInUser);
       sessionStorage.setItem('auth_user', JSON.stringify(loggedInUser));
       return { success: true };
