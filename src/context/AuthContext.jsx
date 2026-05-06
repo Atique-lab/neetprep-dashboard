@@ -1,4 +1,4 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
 
 const AuthContext = createContext();
 
@@ -15,7 +15,7 @@ const USER_CREDENTIALS = {
   },
   himanshu: { 
     password: 'Orbit#91x',   
-    role: 'admin',   
+    role: 'manager', // Changed to manager as per request "Only Atique has full access"
     name: 'Himanshu', 
     title: 'Operations Manager', 
     reportsTo: 'Poonam, Praveen, Mukta, Gurpreet',
@@ -55,7 +55,7 @@ const USER_CREDENTIALS = {
   },
   kapil: { 
     password: 'Quasar$29',   
-    role: 'ceo',     
+    role: 'manager', // Changed from ceo to manager for permission grouping
     name: 'Kapil', 
     title: 'CEO', 
     reportsTo: 'Board',
@@ -68,6 +68,25 @@ export function AuthProvider({ children }) {
     const saved = sessionStorage.getItem('auth_user');
     return saved ? JSON.parse(saved) : null;
   });
+
+  const [profileImage, setProfileImage] = useState(null);
+
+  // Load profile image when user changes
+  useEffect(() => {
+    if (user) {
+      const img = localStorage.getItem(`profile_image_${user.name}`);
+      setProfileImage(img);
+    } else {
+      setProfileImage(null);
+    }
+  }, [user]);
+
+  const updateProfileImage = (dataUrl) => {
+    if (user) {
+      localStorage.setItem(`profile_image_${user.name}`, dataUrl);
+      setProfileImage(dataUrl);
+    }
+  };
 
   const login = (username, password) => {
     const key = username.toLowerCase().trim();
@@ -95,8 +114,10 @@ export function AuthProvider({ children }) {
     sessionStorage.removeItem('auth_user');
   };
 
+  const userList = Object.values(USER_CREDENTIALS).map(u => ({ name: u.name, title: u.title }));
+
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ user, login, logout, profileImage, updateProfileImage, userList }}>
       {children}
     </AuthContext.Provider>
   );

@@ -71,6 +71,27 @@ export function useTaskStore(currentPath) {
     ]);
   }, []);
 
+  const sendTaskToUser = useCallback((toUsername, text, fromName) => {
+    if (!toUsername || !text.trim()) return;
+    const targetKey = getKey(toUsername);
+    let targetTasks = [];
+    try {
+      targetTasks = JSON.parse(localStorage.getItem(targetKey) || "[]");
+    } catch {
+      targetTasks = [];
+    }
+
+    const newTask = {
+      id: Date.now(),
+      text: `${text.trim()} (Assigned by ${fromName})`,
+      completed: false,
+      createdAt: new Date().toISOString(),
+      context: "assigned",
+    };
+
+    localStorage.setItem(targetKey, JSON.stringify([newTask, ...targetTasks]));
+  }, []);
+
   const toggleTask = useCallback((id) => {
     setTasks(prev => prev.map(t => t.id === id ? { ...t, completed: !t.completed } : t));
   }, []);
@@ -91,5 +112,14 @@ export function useTaskStore(currentPath) {
 
   const pendingCount = tasks.filter(t => !t.completed).length;
 
-  return { tasks, addTask, toggleTask, deleteTask, clearCompleted, suggestions: unusedSuggestions, pendingCount };
+  return { 
+    tasks, 
+    addTask, 
+    sendTaskToUser, 
+    toggleTask, 
+    deleteTask, 
+    clearCompleted, 
+    suggestions: unusedSuggestions, 
+    pendingCount 
+  };
 }

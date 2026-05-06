@@ -4,23 +4,26 @@ import { motion } from "framer-motion";
 import { 
   CheckSquare, X, Plus, Trash2, Lightbulb, CheckCheck, 
   User, Shield, Key, Image as ImageIcon, ClipboardList, 
-  Settings, Users, Briefcase, ChevronRight, Info
+  Settings, Users, Briefcase, ChevronRight, Info, Send
 } from "lucide-react";
 import { useTaskStore } from "../hooks/useTaskStore";
 import { useAuth } from "../context/AuthContext";
 
 export default function UserSpace() {
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, profileImage, updateProfileImage, userList } = useAuth();
   
   const initialTab = (location.state && location.state.tab) || "tasks";
   const [activeTab, setActiveTab] = useState(initialTab); 
   
   const [input, setInput] = useState("");
+  const [assignInput, setAssignInput] = useState("");
+  const [assignTo, setAssignTo] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const inputRef = useRef(null);
+  const fileInputRef = useRef(null);
 
-  const { tasks, addTask, toggleTask, deleteTask, clearCompleted, suggestions, pendingCount } =
+  const { tasks, addTask, sendTaskToUser, toggleTask, deleteTask, clearCompleted, suggestions, pendingCount } =
     useTaskStore(location.pathname);
 
   useEffect(() => {
@@ -34,10 +37,29 @@ export default function UserSpace() {
     inputRef.current?.focus();
   };
 
+  const handleAssign = () => {
+    if (!assignInput.trim() || !assignTo) return;
+    sendTaskToUser(assignTo, assignInput, user?.name);
+    alert(`Task assigned to ${assignTo}!`);
+    setAssignInput("");
+    setAssignTo("");
+  };
+
   const handlePasswordChange = () => {
     if (newPassword.trim()) {
       alert("Password change request submitted! (Simulation)");
       setNewPassword("");
+    }
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        updateProfileImage(reader.result);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -51,7 +73,7 @@ export default function UserSpace() {
         <div>
           <h1 className="text-3xl font-bold text-slate-800 tracking-tight">User Space</h1>
           <p className="text-slate-500 text-sm mt-1">
-            Logged in as <span className="text-purple-600 font-bold">{user?.name}</span> • {user?.title}
+            Welcome back, <span className="text-purple-600 font-bold">{user?.name}</span>
           </p>
         </div>
         
@@ -82,7 +104,7 @@ export default function UserSpace() {
             }`}
           >
             <Settings size={18} />
-            Profile & Security
+            Profile & Account
           </button>
         </div>
       </div>
@@ -96,7 +118,7 @@ export default function UserSpace() {
                    <div className="w-8 h-8 rounded-lg bg-purple-100 text-purple-600 flex items-center justify-center">
                      <ClipboardList size={18} />
                    </div>
-                   <h3 className="font-bold text-slate-800 uppercase tracking-wider text-xs">Priority Task List</h3>
+                   <h3 className="font-bold text-slate-800 uppercase tracking-wider text-xs">Personal Task Manager</h3>
                 </div>
                 {completedCount > 0 && (
                   <button onClick={clearCompleted} className="text-xs text-rose-500 font-bold hover:underline">Clear completed</button>
@@ -131,14 +153,14 @@ export default function UserSpace() {
                   ) : tasks.length === 0 ? (
                     <div className="py-20 text-center text-slate-400">
                        <CheckSquare size={48} className="mx-auto mb-4 opacity-10" />
-                       <p className="text-lg font-medium">Clear for today!</p>
-                       <p className="text-sm">You have no pending tasks in your space.</p>
+                       <p className="text-lg font-medium">All tasks completed!</p>
+                       <p className="text-sm">You're all caught up.</p>
                     </div>
                   ) : null}
 
                   {completedTasks.length > 0 && (
                     <div className="pt-6 mt-6 border-t border-slate-100">
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Completed ({completedCount})</p>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Completed Items</p>
                       <div className="space-y-2 opacity-60">
                         {completedTasks.map(task => (
                           <TaskRow key={task.id} task={task} onToggle={toggleTask} onDelete={deleteTask} />
@@ -156,8 +178,25 @@ export default function UserSpace() {
                 <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-purple-500/10 to-transparent rounded-full -mr-32 -mt-32 blur-3xl" />
                 
                 <div className="flex flex-col md:flex-row items-center gap-8 relative">
-                  <div className="w-28 h-28 rounded-3xl bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center text-white text-4xl font-bold shadow-2xl border-4 border-white/50">
-                    {user?.name?.substring(0, 2).toUpperCase()}
+                  <div 
+                    className="w-32 h-32 rounded-3xl bg-slate-100 flex items-center justify-center text-slate-400 text-4xl font-bold shadow-2xl border-4 border-white overflow-hidden relative group cursor-pointer"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    {profileImage ? (
+                      <img src={profileImage} alt="Profile" className="w-full h-full object-cover" />
+                    ) : (
+                      user?.name?.substring(0, 2).toUpperCase()
+                    )}
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
+                      <ImageIcon size={24} />
+                    </div>
+                    <input 
+                      type="file" 
+                      ref={fileInputRef} 
+                      className="hidden" 
+                      accept="image/*" 
+                      onChange={handleImageChange} 
+                    />
                   </div>
                   <div className="text-center md:text-left space-y-2">
                     <div className="flex flex-col md:flex-row md:items-center gap-2">
@@ -170,48 +209,18 @@ export default function UserSpace() {
                     <p className="text-sm text-slate-400 font-medium max-w-md">{user?.desc}</p>
                   </div>
                 </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-slate-100 relative">
-                   <div className="p-4 bg-slate-50/50 rounded-2xl border border-slate-100">
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 flex items-center gap-1.5">
-                        <Users size={12} /> Hierarchical Position
-                      </p>
-                      <div className="flex items-center gap-3 mt-2">
-                        <div className="flex flex-col">
-                          <span className="text-xs text-slate-500 font-medium italic">Reports To:</span>
-                          <span className="text-sm font-bold text-slate-700">{user?.reportsTo}</span>
-                        </div>
-                      </div>
-                   </div>
-                   <div className="p-4 bg-slate-50/50 rounded-2xl border border-slate-100">
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 flex items-center gap-1.5">
-                        <Shield size={12} /> Data Access Level
-                      </p>
-                      <div className="flex items-center gap-3 mt-2">
-                        <div className="flex flex-col">
-                          <span className="text-xs text-slate-500 font-medium italic">Permissions:</span>
-                          <span className="text-sm font-bold text-slate-700">
-                            {user?.role === 'ceo' ? 'Unlimited Global Access' : 
-                             user?.role === 'admin' ? 'Administrative Data Access' : 
-                             user?.name === 'Praveen' ? 'Managerial + Multi-Centre Accounts' : 
-                             'Managerial Level'}
-                          </span>
-                        </div>
-                      </div>
-                   </div>
-                </div>
               </div>
 
               {/* Security */}
               <div className="glass rounded-[2rem] p-8 border-l-4 border-l-amber-500 shadow-xl shadow-amber-500/5">
                  <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
                     <Key size={20} className="text-amber-500" />
-                    Security Update
+                    Security Settings
                  </h3>
                  <div className="flex flex-col md:flex-row gap-4">
                     <input
                       type="password"
-                      placeholder="Type your new password..."
+                      placeholder="Update your password..."
                       value={newPassword}
                       onChange={e => setNewPassword(e.target.value)}
                       className="flex-1 px-5 py-4 rounded-2xl border border-slate-200 focus:outline-none focus:ring-4 focus:ring-purple-500/10 text-base"
@@ -220,43 +229,48 @@ export default function UserSpace() {
                       onClick={handlePasswordChange}
                       className="px-8 py-4 bg-slate-800 text-white rounded-2xl font-bold hover:bg-slate-700 transition-all shadow-lg active:scale-95 shrink-0"
                     >
-                      Apply Changes
+                      Update Password
                     </button>
                  </div>
-                 <p className="text-[10px] text-slate-400 mt-4 flex items-center gap-1.5">
-                   <Info size={12} /> Avoid using common phrases or personal names in your password.
-                 </p>
               </div>
             </div>
           )}
         </div>
 
-        {/* Sidebar Context */}
+        {/* Sidebar Options */}
         <div className="space-y-6">
-          <div className="glass rounded-[2rem] p-6 bg-gradient-to-br from-slate-800 to-slate-900 text-white shadow-2xl relative overflow-hidden group">
-             <div className="absolute -bottom-4 -right-4 w-24 h-24 bg-white/5 rounded-full group-hover:scale-150 transition-transform duration-700" />
-             <h4 className="font-bold mb-6 flex items-center gap-2 text-purple-400">
-               <Briefcase size={18} /> Role Protocol
-             </h4>
-             <div className="space-y-4">
-                {user?.role === 'ceo' ? (
-                  <ProtocolItem text="Review high-level revenue trends weekly" />
-                ) : user?.name === 'Praveen' ? (
-                  <>
-                    <ProtocolItem text="Reconcile accounts for all centres daily" />
-                    <ProtocolItem text="Audit centre-wise share distributions" />
-                  </>
-                ) : user?.role === 'manager' ? (
-                  <ProtocolItem text="Ensure all student data is updated by EOD" />
-                ) : (
-                  <>
-                    <ProtocolItem text="Verify data integrity across all sources" />
-                    <ProtocolItem text="Optimize dashboard visuals for clarity" />
-                  </>
-                )}
-                <ProtocolItem text="Monitor daily enrolment growth" />
-                <ProtocolItem text="Maintain system security protocols" />
-             </div>
+          
+          {/* Assign Task Card */}
+          <div className="glass rounded-[2rem] p-6 space-y-4 border border-purple-100 shadow-xl shadow-purple-500/5">
+            <h4 className="font-bold text-slate-800 flex items-center gap-2 mb-2">
+              <Send size={18} className="text-purple-600" />
+              Assign Task
+            </h4>
+            <div className="space-y-3">
+              <select
+                value={assignTo}
+                onChange={(e) => setAssignTo(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-purple-500/30"
+              >
+                <option value="">Select User...</option>
+                {userList.filter(u => u.name !== user?.name).map(u => (
+                  <option key={u.name} value={u.name}>{u.name} ({u.title})</option>
+                ))}
+              </select>
+              <textarea
+                placeholder="What task to assign?"
+                value={assignInput}
+                onChange={(e) => setAssignInput(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm min-h-[80px] focus:outline-none focus:ring-2 focus:ring-purple-500/30"
+              />
+              <button
+                onClick={handleAssign}
+                disabled={!assignTo || !assignInput.trim()}
+                className="w-full py-3 bg-purple-600 hover:bg-purple-700 disabled:opacity-40 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition shadow-lg shadow-purple-200"
+              >
+                <Send size={14} /> Assign Now
+              </button>
+            </div>
           </div>
 
           <div className="glass rounded-[2rem] p-6 space-y-4 border-t-4 border-t-purple-500">
@@ -285,15 +299,6 @@ export default function UserSpace() {
   );
 }
 
-function ProtocolItem({ text }) {
-  return (
-    <div className="flex items-start gap-3">
-      <div className="w-1.5 h-1.5 rounded-full bg-purple-400 mt-1.5 shrink-0" />
-      <span className="text-xs font-medium opacity-90">{text}</span>
-    </div>
-  );
-}
-
 function TaskRow({ task, onToggle, onDelete }) {
   return (
     <div className={`flex items-center gap-4 group px-5 py-5 rounded-2xl transition-all border ${
@@ -309,9 +314,14 @@ function TaskRow({ task, onToggle, onDelete }) {
       >
         {task.completed && <CheckCheck size={14} />}
       </button>
-      <p className={`text-base flex-1 font-bold ${task.completed ? "line-through text-slate-400" : "text-slate-700"}`}>
-        {task.text}
-      </p>
+      <div className="flex-1">
+        <p className={`text-base font-bold ${task.completed ? "line-through text-slate-400" : "text-slate-700"}`}>
+          {task.text}
+        </p>
+        {task.context === "assigned" && (
+           <span className="text-[10px] text-purple-500 font-bold uppercase tracking-wider">Assigned Task</span>
+        )}
+      </div>
       <button
         onClick={() => onDelete(task.id)}
         className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-rose-500 transition-all p-1"
