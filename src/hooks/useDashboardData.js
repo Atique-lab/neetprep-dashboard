@@ -51,6 +51,8 @@ export function useDashboardData() {
       yesterdayInternal: 0,
       yesterdayTotal: 0,
       yesterdayLabel: "-",
+      yesterdayExtPaidNeetprep: 0,
+      yesterdayExtPaidCentre: 0,
     },
     notifications: [],
     monthlyData: [],
@@ -325,12 +327,20 @@ export function useDashboardData() {
 
     let yesterdayExternal = 0;
     let yesterdayInternal = 0;
+    let yesterdayExtPaidNeetprep = 0;
+    let yesterdayExtPaidCentre = 0;
     const validRows = filteredData.slice(1).filter(r => r[1]);
 
     validRows.forEach(row => {
       if ((row[1] || "").toString().trim() === yesterdayLabel.trim()) {
         const type = (row[12] || "").toString().trim().toLowerCase();
-        if (type === "external") yesterdayExternal++;
+        const paidTo = (row[13] || "").toString().trim().toLowerCase();
+        
+        if (type === "external") {
+          yesterdayExternal++;
+          if (paidTo.includes("neetprep")) yesterdayExtPaidNeetprep++;
+          else if (paidTo.includes("centre") || paidTo.includes("center")) yesterdayExtPaidCentre++;
+        }
         else if (type === "internal") yesterdayInternal++;
       }
     });
@@ -430,6 +440,8 @@ export function useDashboardData() {
         yesterdayInternal,
         yesterdayTotal,
         yesterdayLabel,
+        yesterdayExtPaidNeetprep,
+        yesterdayExtPaidCentre,
       },
       notifications: notifs,
       monthlyData,

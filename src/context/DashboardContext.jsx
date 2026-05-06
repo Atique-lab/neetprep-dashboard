@@ -74,16 +74,9 @@ export function DashboardProvider({ children }) {
       const rowDate = new Date(`${row[1]} 2026`);
       if (isNaN(rowDate)) return true;
 
-      if (dateRange === "this_month") {
-        return rowDate.getMonth() === latestDate.getMonth();
-      } else if (dateRange === "last_7_days") {
-        const diffTime = Math.abs(latestDate - rowDate);
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        return diffDays <= 7;
-      } else if (dateRange === "last_30_days") {
-        const diffTime = Math.abs(latestDate - rowDate);
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        return diffDays <= 30;
+      const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      if (months.includes(dateRange)) {
+        return getMonth(row[1]) === dateRange;
       }
       return true;
     });

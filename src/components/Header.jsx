@@ -2,15 +2,31 @@ import { useState, useEffect, useRef } from "react";
 import { useGlobalData } from "../context/DashboardContext";
 import { useAuth } from "../context/AuthContext";
 import { useDashboardData } from "../hooks/useDashboardData";
-import { Bell, LogOut, CheckCheck } from "lucide-react";
+import { Bell, LogOut, CheckCheck, Calendar } from "lucide-react";
 
 export default function Header() {
-  const { dateRange, setDateRange, lastSynced } = useGlobalData();
+  const { dateRange, setDateRange } = useGlobalData();
   const { user, logout } = useAuth();
   const { notifications } = useDashboardData();
   const [showNotifs, setShowNotifs] = useState(false);
   const [readCount, setReadCount] = useState(0);
   const popupRef = useRef(null);
+
+  const months = [
+    { id: "all", label: "All Time" },
+    { id: "Jan", label: "January" },
+    { id: "Feb", label: "February" },
+    { id: "Mar", label: "March" },
+    { id: "Apr", label: "April" },
+    { id: "May", label: "May" },
+    { id: "Jun", label: "June" },
+    { id: "Jul", label: "July" },
+    { id: "Aug", label: "August" },
+    { id: "Sep", label: "September" },
+    { id: "Oct", label: "October" },
+    { id: "Nov", label: "November" },
+    { id: "Dec", label: "December" },
+  ];
 
   // Close popup on outside click
   useEffect(() => {
@@ -23,7 +39,6 @@ export default function Header() {
     return () => document.removeEventListener("mousedown", handleOutside);
   }, []);
 
-  // When popup opens, mark all as read
   const handleBellClick = () => {
     const next = !showNotifs;
     setShowNotifs(next);
@@ -57,35 +72,22 @@ export default function Header() {
 
   return (
     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-      {/* Left: Date Filter + Quick Presets */}
-      <div className="flex flex-wrap items-center gap-2">
-        <select
-          value={dateRange}
-          onChange={(e) => setDateRange(e.target.value)}
-          className="px-4 py-3 glass rounded-2xl text-slate-700 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-purple-500/50 cursor-pointer transition-all appearance-none pr-10 bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%236b7280%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E')] bg-no-repeat bg-[length:10px_10px] bg-[right_16px_center]"
-        >
-          <option value="all">All Time Overview</option>
-          <option value="this_month">This Month</option>
-          <option value="last_30_days">Last 30 Days</option>
-          <option value="last_7_days">Last 7 Days</option>
-        </select>
-        {/* Quick preset pills */}
-        {["all", "this_month", "last_30_days", "last_7_days"].map((val, i) => {
-          const labels = ["All", "This Month", "Last 30d", "Last 7d"];
-          return (
-            <button
-              key={val}
-              onClick={() => setDateRange(val)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
-                dateRange === val
-                  ? "bg-purple-600 text-white shadow-sm shadow-purple-200"
-                  : "glass text-slate-500 hover:text-purple-600"
-              }`}
-            >
-              {labels[i]}
-            </button>
-          );
-        })}
+      {/* Left: Simplified Month Filter */}
+      <div className="flex items-center gap-3">
+        <div className="relative group">
+          <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-purple-500 transition-colors">
+            <Calendar size={16} />
+          </div>
+          <select
+            value={dateRange}
+            onChange={(e) => setDateRange(e.target.value)}
+            className="pl-11 pr-10 py-3 glass rounded-2xl text-slate-700 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-purple-500/50 cursor-pointer transition-all appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%236b7280%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E')] bg-no-repeat bg-[length:10px_10px] bg-[right_16px_center] min-w-[200px]"
+          >
+            {months.map(m => (
+              <option key={m.id} value={m.id}>{m.label}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* Right: Bell + Avatar + Logout */}
@@ -152,10 +154,16 @@ export default function Header() {
           </div>
         )}
 
-        {/* Avatar */}
+        {/* Avatar - Clickable to open User Space (handled by the fixed UserSpace component usually, but we can trigger it) */}
+        {/* Since UserSpace is a fixed floating panel, the user might expect clicking the avatar to open it or show similar info. */}
         <div
-          className="h-10 w-10 rounded-full bg-gradient-to-tr from-purple-600 to-blue-500 flex items-center justify-center text-white font-bold shadow-md hover:shadow-lg transition-shadow cursor-default"
-          title={user?.name}
+          className="h-10 w-10 rounded-full bg-gradient-to-tr from-purple-600 to-blue-500 flex items-center justify-center text-white font-bold shadow-md hover:shadow-lg hover:scale-105 transition-all cursor-pointer border-2 border-white"
+          title={`Signed in as ${user?.name}`}
+          onClick={() => {
+             // We can use a custom event or just let the user use the floating button.
+             // But to fulfill "Make User Clickable", I'll add a simple tooltip or just hint that they can manage profile in User Space.
+             alert(`Logged in as: ${user?.name}\nRole: ${user?.role}\nYou can manage your tasks and profile in the "User Space" button at the bottom right.`);
+          }}
         >
           {getInitials(user?.name)}
         </div>

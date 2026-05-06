@@ -1,7 +1,8 @@
 import { useState, useMemo, useEffect } from "react";
 import { useDashboardData } from "../hooks/useDashboardData";
 import { exportToCSV } from "../utils/exportToCSV";
-import { AlertCircle, Search, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Phone, Mail, Download } from "lucide-react";
+import { AlertCircle, Search, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Phone, Mail, Download, Users, UserCheck, UserPlus } from "lucide-react";
+import KPICard from "../components/KPICard";
 
 export default function Students() {
   const { filteredData, loading, error } = useDashboardData();
@@ -26,6 +27,13 @@ export default function Students() {
       intExt: row[12] || "-",
     })).filter(row => row.name !== "Unknown");
   }, [filteredData]);
+
+  const kpis = useMemo(() => {
+    const total = students.length;
+    const internal = students.filter(s => s.intExt.toLowerCase().includes("internal")).length;
+    const external = students.filter(s => s.intExt.toLowerCase().includes("external")).length;
+    return { total, internal, external };
+  }, [students]);
 
   // Interactivity States
   const [searchQuery, setSearchQuery] = useState("");
@@ -79,140 +87,152 @@ export default function Students() {
     setSortConfig({ key, direction });
   };
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery, sortConfig]);
-
   const renderSortIcon = (key) => {
-    if (sortConfig?.key !== key) return null;
-    return sortConfig.direction === "asc" ? <ChevronUp size={14} className="inline ml-1" /> : <ChevronDown size={14} className="inline ml-1" />;
+    if (sortConfig?.key !== key) return <ChevronUp size={14} className="opacity-20" />;
+    return sortConfig.direction === "asc" ? <ChevronUp size={14} /> : <ChevronDown size={14} />;
   };
 
-  if (error) {
-    return (
-      <div className="flex flex-col items-center justify-center h-64 text-red-500">
-        <AlertCircle size={48} className="mb-4" />
-        <h2 className="text-xl font-semibold">Failed to load data</h2>
-        <p>{error}</p>
-      </div>
-    );
-  }
+  if (error) return (
+    <div className="flex flex-col items-center justify-center h-64 text-red-500 glass rounded-3xl">
+      <AlertCircle size={48} className="mb-4" />
+      <h2 className="text-xl font-semibold">Failed to load students</h2>
+      <p>{error}</p>
+    </div>
+  );
 
-  if (loading) {
-    return (
-      <div className="animate-pulse">
-        <div className="h-8 bg-gray-200 rounded w-1/4 mb-6"></div>
-        <div className="bg-gray-100 rounded-2xl h-[600px] w-full"></div>
+  if (loading) return (
+    <div className="animate-pulse space-y-6">
+      <div className="h-10 bg-slate-200/50 rounded-xl w-1/4" />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {[...Array(3)].map((_, i) => <div key={i} className="glass rounded-3xl h-32" />)}
       </div>
-    );
-  }
+      <div className="glass rounded-3xl h-96 w-full" />
+    </div>
+  );
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <h1 className="text-2xl font-semibold text-gray-800 mb-6">
-        Students Directory
-      </h1>
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-800 tracking-tight">Students Directory</h1>
+          <p className="text-slate-500 text-sm mt-1">Manage and view all enrolled student records.</p>
+        </div>
+        <button
+          onClick={() => exportToCSV(students, "neetprep_students_list.csv")}
+          className="flex items-center gap-2 px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-2xl font-bold transition-all shadow-lg shadow-purple-200 hover:shadow-purple-300 active:scale-95"
+        >
+          <Download size={18} />
+          Export CSV
+        </button>
+      </div>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        
-        {/* Header & Search */}
-        <div className="p-6 border-b border-gray-100 flex flex-col md:flex-row justify-between items-center gap-4">
-          <div>
-            <h2 className="text-lg font-semibold text-gray-800">Enrollment List</h2>
-            <p className="text-sm text-gray-500">Total Students: {students.length}</p>
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <KPICard 
+          title="Total Students" 
+          value={kpis.total} 
+          color="blue" 
+          icon={<Users size={20} />} 
+        />
+        <KPICard 
+          title="Internal Students" 
+          value={kpis.internal} 
+          color="indigo" 
+          icon={<UserCheck size={20} />} 
+        />
+        <KPICard 
+          title="External Students" 
+          value={kpis.external} 
+          color="purple" 
+          icon={<UserPlus size={20} />} 
+        />
+      </div>
+
+      <div className="glass rounded-[2rem] overflow-hidden">
+        {/* Table Header / Search */}
+        <div className="p-6 border-b border-white/20 flex flex-col md:flex-row justify-between items-center gap-4">
+          <div className="relative w-full md:w-96 group">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-purple-500 transition-colors" size={18} />
+            <input
+              type="text"
+              placeholder="Search by name, email, phone, centre..."
+              className="w-full pl-12 pr-4 py-3 bg-white/50 border border-white/40 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-500/30 transition-all text-sm font-medium"
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setCurrentPage(1);
+              }}
+            />
           </div>
-          <div className="flex items-center gap-3 w-full md:w-auto">
-            <div className="relative w-full md:w-80">
-              <input
-                type="text"
-                placeholder="Search by name, email, phone, or centre..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-shadow bg-gray-50 focus:bg-white"
-              />
-              <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
-            </div>
-            <button
-              onClick={() => exportToCSV(sortedData, "students_data")}
-              className="flex items-center justify-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition whitespace-nowrap"
-            >
-              <Download size={16} /> <span className="hidden md:inline">Export</span>
-            </button>
+          <div className="text-xs font-bold text-slate-400 uppercase tracking-widest bg-white/30 px-4 py-2 rounded-full border border-white/40">
+            {searchedData.length} records found
           </div>
         </div>
 
-        {/* Table */}
+        {/* Table Content */}
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <table className="w-full text-left">
             <thead>
-              <tr className="bg-gray-50 text-gray-500 text-sm uppercase tracking-wider select-none">
-                <th className="p-4 font-medium cursor-pointer hover:bg-gray-100 transition whitespace-nowrap" onClick={() => requestSort('date')}>
+              <tr className="text-slate-400 text-xs uppercase tracking-wider select-none border-b border-white/20">
+                <th className="p-4 font-semibold cursor-pointer hover:text-purple-600 transition" onClick={() => requestSort('date')}>
                   Date {renderSortIcon('date')}
                 </th>
-                <th className="p-4 font-medium cursor-pointer hover:bg-gray-100 transition whitespace-nowrap" onClick={() => requestSort('name')}>
-                  Student Info {renderSortIcon('name')}
+                <th className="p-4 font-semibold cursor-pointer hover:text-purple-600 transition" onClick={() => requestSort('name')}>
+                  Name {renderSortIcon('name')}
                 </th>
-                <th className="p-4 font-medium cursor-pointer hover:bg-gray-100 transition" onClick={() => requestSort('course')}>
-                  Course {renderSortIcon('course')}
-                </th>
-                <th className="p-4 font-medium cursor-pointer hover:bg-gray-100 transition" onClick={() => requestSort('centre')}>
+                <th className="p-4 font-semibold">Contact</th>
+                <th className="p-4 font-semibold cursor-pointer hover:text-purple-600 transition" onClick={() => requestSort('centre')}>
                   Centre {renderSortIcon('centre')}
                 </th>
-                <th className="p-4 font-medium text-center cursor-pointer hover:bg-gray-100 transition" onClick={() => requestSort('intExt')}>
+                <th className="p-4 font-semibold cursor-pointer hover:text-purple-600 transition" onClick={() => requestSort('intExt')}>
                   Type {renderSortIcon('intExt')}
                 </th>
-                <th className="p-4 font-medium text-right cursor-pointer hover:bg-gray-100 transition whitespace-nowrap" onClick={() => requestSort('amount')}>
-                  Amount Received {renderSortIcon('amount')}
+                <th className="p-4 font-semibold text-right cursor-pointer hover:text-purple-600 transition" onClick={() => requestSort('amount')}>
+                  Paid {renderSortIcon('amount')}
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
-              {paginatedData.length > 0 ? paginatedData.map((s, index) => (
-                <tr key={index} className="hover:bg-gray-50 transition">
-                  <td className="p-4 text-gray-600 text-sm whitespace-nowrap">{s.date}</td>
-                  
+            <tbody className="divide-y divide-white/10">
+              {paginatedData.length > 0 ? paginatedData.map((s, idx) => (
+                <tr key={idx} className="hover:bg-white/40 transition">
+                  <td className="p-4 text-sm text-slate-500 whitespace-nowrap">{s.date}</td>
                   <td className="p-4">
-                    <div className="font-semibold text-gray-800">{s.name}</div>
-                    <div className="flex items-center gap-3 mt-1">
-                      {s.phone && s.phone !== "-" && (
-                        <span className="text-xs text-gray-500 flex items-center gap-1">
-                          <Phone size={12} /> {s.phone}
-                        </span>
-                      )}
-                      {s.email && s.email !== "-" && (
-                        <span className="text-xs text-gray-500 flex items-center gap-1 truncate max-w-[150px]" title={s.email}>
-                          <Mail size={12} /> {s.email}
-                        </span>
-                      )}
+                    <div className="font-bold text-slate-800">{s.name}</div>
+                    <div className="text-[10px] text-slate-400 font-medium uppercase truncate max-w-[150px]">{s.course}</div>
+                  </td>
+                  <td className="p-4">
+                    <div className="flex items-center gap-2 text-xs text-slate-600 mb-1">
+                      <Phone size={12} className="text-purple-400" /> {s.phone}
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-slate-600">
+                      <Mail size={12} className="text-purple-400" /> {s.email}
                     </div>
                   </td>
-                  
-                  <td className="p-4 text-gray-600 text-sm max-w-[200px] truncate" title={s.course}>
-                    {s.course}
+                  <td className="p-4">
+                    <span className="text-xs font-bold px-2.5 py-1 bg-white/60 text-slate-600 rounded-lg border border-white/60">
+                      {s.centre}
+                    </span>
                   </td>
-                  
-                  <td className="p-4 text-gray-800 font-medium text-sm max-w-[200px] truncate" title={s.centre}>
-                    {s.centre}
-                  </td>
-                  
-                  <td className="p-4 text-center">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      s.intExt.toLowerCase() === 'internal' ? 'bg-blue-100 text-blue-800' : 
-                      s.intExt.toLowerCase() === 'external' ? 'bg-orange-100 text-orange-800' : 
-                      'bg-gray-100 text-gray-800'
+                  <td className="p-4">
+                    <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-md ${
+                      s.intExt.toLowerCase().includes("internal") 
+                        ? "bg-indigo-100 text-indigo-700" 
+                        : "bg-amber-100 text-amber-700"
                     }`}>
                       {s.intExt}
                     </span>
                   </td>
-                  
-                  <td className="p-4 text-right font-semibold text-green-600">
-                    ₹{s.amount.toLocaleString()}
+                  <td className="p-4 text-right">
+                    <div className="font-black text-slate-800">₹{s.amount.toLocaleString()}</div>
                   </td>
                 </tr>
               )) : (
                 <tr>
-                  <td colSpan="6" className="p-8 text-center text-gray-500">
-                    No students found matching your search.
+                  <td colSpan="6" className="p-12 text-center">
+                    <div className="flex flex-col items-center gap-3 text-slate-400">
+                      <Search size={48} className="opacity-20" />
+                      <p className="font-semibold italic">No students match your search criteria.</p>
+                    </div>
                   </td>
                 </tr>
               )}
@@ -221,29 +241,52 @@ export default function Students() {
         </div>
 
         {/* Pagination */}
-        <div className="p-4 border-t border-gray-100 flex items-center justify-between text-sm text-gray-600">
-          <div>
-            Showing <span className="font-medium text-gray-900">{sortedData.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0}</span> to <span className="font-medium text-gray-900">{Math.min(currentPage * itemsPerPage, sortedData.length)}</span> of <span className="font-medium text-gray-900">{sortedData.length}</span> students
+        <div className="p-6 bg-white/30 border-t border-white/20 flex flex-col md:flex-row justify-between items-center gap-4">
+          <div className="text-xs font-bold text-slate-500 uppercase tracking-widest">
+            Showing {paginatedData.length} of {searchedData.length} students
           </div>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
             <button
-              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
               disabled={currentPage === 1}
-              className="p-2 border rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:hover:bg-white transition"
+              onClick={() => setCurrentPage(p => p - 1)}
+              className="p-2 glass rounded-xl text-slate-600 disabled:opacity-20 hover:text-purple-600 transition-colors"
             >
-              <ChevronLeft size={16} />
+              <ChevronLeft size={20} />
             </button>
-            <span className="flex items-center px-2 text-gray-500">Page {currentPage} of {totalPages}</span>
+            <div className="flex items-center gap-1">
+              {[...Array(Math.min(5, totalPages))].map((_, i) => {
+                let pageNum = i + 1;
+                if (totalPages > 5 && currentPage > 3) {
+                  pageNum = currentPage - 2 + i;
+                  if (pageNum + (4 - i) > totalPages) pageNum = totalPages - 4 + i;
+                }
+                if (pageNum <= 0) return null;
+                if (pageNum > totalPages) return null;
+
+                return (
+                  <button
+                    key={pageNum}
+                    onClick={() => setCurrentPage(pageNum)}
+                    className={`w-10 h-10 rounded-xl text-xs font-bold transition-all ${
+                      currentPage === pageNum
+                        ? "bg-purple-600 text-white shadow-md shadow-purple-200"
+                        : "glass text-slate-500 hover:text-purple-600"
+                    }`}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              })}
+            </div>
             <button
-              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
               disabled={currentPage === totalPages}
-              className="p-2 border rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:hover:bg-white transition"
+              onClick={() => setCurrentPage(p => p + 1)}
+              className="p-2 glass rounded-xl text-slate-600 disabled:opacity-20 hover:text-purple-600 transition-colors"
             >
-              <ChevronRight size={16} />
+              <ChevronRight size={20} />
             </button>
           </div>
         </div>
-
       </div>
     </div>
   );

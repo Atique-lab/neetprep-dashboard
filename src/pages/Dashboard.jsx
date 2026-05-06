@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import {
   DollarSign, Users, TrendingUp, TrendingDown,
-  AlertCircle, CalendarCheck2, Award, Trophy, UserCheck
+  AlertCircle, CalendarCheck2, Award, Trophy, UserCheck, Wallet, School
 } from "lucide-react";
 import KPICard from "../components/KPICard";
 import RevenueChart from "../components/RevenueChart";
@@ -153,7 +153,6 @@ export default function Dashboard() {
                 <Trophy size={15} className="text-amber-500" />
                 <p className="text-sm text-slate-500 font-medium">Top Performing Centre</p>
               </div>
-              {/* Fix #9: full name in title attribute for tooltip on hover */}
               <h2 className="text-base font-bold text-green-600 truncate" title={insights.topCentre}>
                 {insights.topCentre}
               </h2>
@@ -179,7 +178,6 @@ export default function Dashboard() {
               Yesterday Enrolments ({insights.yesterdayLabel})
             </p>
           </div>
-          {/* Fix #12: empty state when no enrolments recorded */}
           {insights.yesterdayTotal === 0 ? (
             <div className="flex flex-col items-center justify-center py-4 text-center">
               <CalendarCheck2 size={32} className="text-slate-300 mb-2" />
@@ -203,39 +201,35 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* Alerts */}
+        {/* External Payments Breakdown (Replaced Intelligent Alerts) */}
         <div className="glass p-6 md:p-8 rounded-[2rem] relative overflow-hidden group hover:-translate-y-1 transition-transform duration-300">
           <div className="absolute -right-6 -top-6 w-32 h-32 bg-rose-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
           <div className="flex items-center gap-2 mb-4">
-            <AlertCircle size={15} className="text-rose-500" />
-            <p className="text-sm text-slate-500 font-medium">Intelligent Alerts</p>
+            <Wallet size={15} className="text-rose-500" />
+            <p className="text-sm text-slate-500 font-medium">Yesterday External Payments</p>
           </div>
-          <div className="space-y-2.5">
-            {insights.bestRevenue > insights.avg * 1.5 && (
-              <div className="flex items-start gap-2 p-3 bg-green-50/70 rounded-xl border border-green-100">
-                <span className="mt-1.5 w-2 h-2 flex-shrink-0 rounded-full bg-green-500"></span>
-                <p className="text-xs font-medium text-green-800">Revenue spike on {insights.bestDay}</p>
+          <div className="space-y-3">
+            <div className="p-4 bg-rose-50/70 rounded-2xl border border-rose-100 flex justify-between items-center">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-rose-500 flex items-center justify-center text-white">
+                   <Wallet size={16} />
+                </div>
+                <p className="text-sm font-bold text-rose-800">Paid to NEETprep</p>
               </div>
-            )}
-            {insights.worstRevenue > 0 && insights.worstRevenue < insights.avg * 0.5 && (
-              <div className="flex items-start gap-2 p-3 bg-orange-50/70 rounded-xl border border-orange-100">
-                <span className="mt-1.5 w-2 h-2 flex-shrink-0 rounded-full bg-orange-500"></span>
-                <p className="text-xs font-medium text-orange-800">Low performance on {insights.worstDay}</p>
+              <span className="text-2xl font-black text-rose-600">{insights.yesterdayExtPaidNeetprep}</span>
+            </div>
+            
+            <div className="p-4 bg-amber-50/70 rounded-2xl border border-amber-100 flex justify-between items-center">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-amber-500 flex items-center justify-center text-white">
+                   <School size={16} />
+                </div>
+                <p className="text-sm font-bold text-amber-800">Paid to Centre</p>
               </div>
-            )}
-            {insights.avg === 0 && (
-              <div className="flex items-start gap-2 p-3 bg-rose-50/70 rounded-xl border border-rose-100">
-                <span className="mt-1.5 w-2 h-2 flex-shrink-0 rounded-full bg-rose-500"></span>
-                <p className="text-xs font-medium text-rose-800">No revenue data available</p>
-              </div>
-            )}
-            {insights.bestRevenue <= insights.avg * 1.5 && insights.avg > 0 && (insights.worstRevenue === 0 || insights.worstRevenue >= insights.avg * 0.5) && (
-              <div className="flex items-start gap-2 p-3 bg-emerald-50/70 rounded-xl border border-emerald-100">
-                <span className="mt-1.5 w-2 h-2 flex-shrink-0 rounded-full bg-emerald-500"></span>
-                <p className="text-xs font-medium text-emerald-800">Performance is stable. No anomalies detected.</p>
-              </div>
-            )}
+              <span className="text-2xl font-black text-amber-600">{insights.yesterdayExtPaidCentre}</span>
+            </div>
           </div>
+          <p className="text-[10px] text-slate-400 mt-3 italic">* Based on {insights.yesterdayExternal} external students enrolled yesterday</p>
         </div>
       </div>
     </motion.div>

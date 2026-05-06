@@ -1,6 +1,6 @@
 import Sidebar from "./Sidebar";
 import Header from "./Header";
-import TaskPanel from "./TaskPanel";
+import UserSpace from "./UserSpace";
 import { Outlet } from "react-router-dom";
 
 export default function Layout() {
@@ -22,8 +22,8 @@ export default function Layout() {
         </div>
       </div>
 
-      {/* Global Task Panel - floats on all pages */}
-      <TaskPanel />
+      {/* Global User Space - floats on all pages */}
+      <UserSpace />
 
     </div>
   );
