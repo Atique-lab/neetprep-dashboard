@@ -1,6 +1,5 @@
 import Sidebar from "./Sidebar";
 import Header from "./Header";
-import UserSpace from "./UserSpace";
 import { Outlet } from "react-router-dom";
 
 export default function Layout() {
@@ -16,14 +15,11 @@ export default function Layout() {
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
         <div className="flex-1 p-4 lg:p-6 lg:pl-0 overflow-y-auto">
           <Header />
-          <div className="pb-24">
+          <div className="pb-10">
             <Outlet />
           </div>
         </div>
       </div>
-
-      {/* Global User Space - floats on all pages */}
-      <UserSpace />
 
     </div>
   );

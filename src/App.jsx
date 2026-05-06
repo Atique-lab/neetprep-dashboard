@@ -11,6 +11,7 @@ import Centres from "./pages/Centres";
 import CentreDetail from "./pages/CentreDetail";
 import Payments from "./pages/Payments";
 import Students from "./pages/Students";
+import UserSpace from "./pages/UserSpace";
 
 function AppRoutes() {
   const { user } = useAuth();
@@ -30,6 +31,7 @@ function AppRoutes() {
         <Route path="centres/:id" element={<CentreDetail />} />
         <Route path="payments" element={<Payments />} />
         <Route path="students" element={<Students />} />
+        <Route path="user-space" element={<UserSpace />} />
       </Route>
     </Routes>
   );

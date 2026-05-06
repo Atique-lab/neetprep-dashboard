@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { useGlobalData } from "../context/DashboardContext";
 import { useAuth } from "../context/AuthContext";
 import { useDashboardData } from "../hooks/useDashboardData";
 import { Bell, LogOut, CheckCheck, Calendar, User, Shield, ExternalLink } from "lucide-react";
 
 export default function Header() {
+  const navigate = useNavigate();
   const { dateRange, setDateRange } = useGlobalData();
   const { user, logout } = useAuth();
   const { notifications } = useDashboardData();
@@ -58,9 +60,9 @@ export default function Header() {
     setShowProfile(!showProfile);
   };
 
-  const openUserSpaceProfile = () => {
+  const goToUserSpace = (tab = "tasks") => {
     setShowProfile(false);
-    window.dispatchEvent(new CustomEvent('toggle-user-space', { detail: { tab: 'profile' } }));
+    navigate("/user-space", { state: { tab } });
   };
 
   const unreadCount = Math.max(0, (notifications?.length || 0) - readCount);
@@ -185,7 +187,7 @@ export default function Header() {
                   {getInitials(user?.name)}
                 </div>
                 <button 
-                  onClick={openUserSpaceProfile}
+                  onClick={() => goToUserSpace("profile")}
                   className="text-lg font-bold text-slate-800 hover:text-purple-600 flex items-center justify-center gap-1.5 mx-auto group"
                 >
                   {user?.name}
@@ -197,7 +199,7 @@ export default function Header() {
               </div>
               <div className="p-4 space-y-1">
                 <button 
-                  onClick={openUserSpaceProfile}
+                  onClick={() => goToUserSpace("tasks")}
                   className="w-full text-left p-3 rounded-xl hover:bg-slate-50 transition flex items-center gap-3 group"
                 >
                   <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 group-hover:bg-purple-100 group-hover:text-purple-600 transition-colors">
@@ -225,7 +227,7 @@ export default function Header() {
           )}
         </div>
 
-        {/* Simple Logout as fallback icon if needed, but we have it in profile now */}
+        {/* Simple Logout as fallback icon if needed */}
         <button
           onClick={logout}
           className="p-3 glass rounded-full text-slate-600 hover:text-rose-600 transition-colors hidden md:block"
