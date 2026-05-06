@@ -45,10 +45,13 @@ export function useTaskStore(currentPath) {
         .eq('assigned_to', user.name)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase Task Fetch Error:", error);
+        throw error;
+      }
       setTasks(data || []);
     } catch (err) {
-      console.error("Error fetching tasks:", err);
+      console.error("Critical Task Store Error:", err.message);
     } finally {
       setLoading(false);
     }
