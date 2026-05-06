@@ -386,9 +386,9 @@ function TaskItem({ task, onToggle, onDelete }) {
               <MapPin size={9}/> {task.relatedTo}
             </span>
           )}
-          {task.assignedBy && (
+          {task.assignedBy && task.assignedBy !== user?.name && (
             <span className="flex items-center gap-1 text-[9px] font-black text-purple-600 uppercase tracking-widest bg-purple-100 px-2 py-0.5 rounded-md">
-              From: {task.assignedBy}
+              Assigned by - {task.assignedBy}
             </span>
           )}
         </div>

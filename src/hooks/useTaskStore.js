@@ -49,7 +49,13 @@ export function useTaskStore(currentPath) {
         console.error("Supabase Task Fetch Error:", error);
         throw error;
       }
-      setTasks(data || []);
+      const mappedTasks = (data || []).map(t => ({
+        ...t,
+        assignedBy: t.assigned_by,
+        relatedTo: t.related_to,
+        dueDate: t.due_date
+      }));
+      setTasks(mappedTasks);
     } catch (err) {
       console.error("Critical Task Store Error:", err.message);
     } finally {
