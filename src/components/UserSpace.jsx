@@ -27,6 +27,16 @@ export default function UserSpace() {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
+  // Listen for global toggle events (from Header)
+  useEffect(() => {
+    function handleToggle(e) {
+      setOpen(true);
+      if (e.detail?.tab) setActiveTab(e.detail.tab);
+    }
+    window.addEventListener('toggle-user-space', handleToggle);
+    return () => window.removeEventListener('toggle-user-space', handleToggle);
+  }, []);
+
   // Focus input when panel opens and tasks tab is active
   useEffect(() => {
     if (open && activeTab === "tasks") setTimeout(() => inputRef.current?.focus(), 150);

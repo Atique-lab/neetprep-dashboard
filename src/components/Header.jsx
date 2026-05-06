@@ -2,15 +2,17 @@ import { useState, useEffect, useRef } from "react";
 import { useGlobalData } from "../context/DashboardContext";
 import { useAuth } from "../context/AuthContext";
 import { useDashboardData } from "../hooks/useDashboardData";
-import { Bell, LogOut, CheckCheck, Calendar } from "lucide-react";
+import { Bell, LogOut, CheckCheck, Calendar, User, Shield, ExternalLink } from "lucide-react";
 
 export default function Header() {
   const { dateRange, setDateRange } = useGlobalData();
   const { user, logout } = useAuth();
   const { notifications } = useDashboardData();
   const [showNotifs, setShowNotifs] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
   const [readCount, setReadCount] = useState(0);
   const popupRef = useRef(null);
+  const profileRef = useRef(null);
 
   const months = [
     { id: "all", label: "All Time" },
@@ -28,11 +30,14 @@ export default function Header() {
     { id: "Dec", label: "December" },
   ];
 
-  // Close popup on outside click
+  // Close popups on outside click
   useEffect(() => {
     function handleOutside(e) {
       if (popupRef.current && !popupRef.current.contains(e.target)) {
         setShowNotifs(false);
+      }
+      if (profileRef.current && !profileRef.current.contains(e.target)) {
+        setShowProfile(false);
       }
     }
     document.addEventListener("mousedown", handleOutside);
@@ -40,11 +45,22 @@ export default function Header() {
   }, []);
 
   const handleBellClick = () => {
+    setShowProfile(false);
     const next = !showNotifs;
     setShowNotifs(next);
     if (next) {
       setReadCount(notifications?.length || 0);
     }
+  };
+
+  const handleAvatarClick = () => {
+    setShowNotifs(false);
+    setShowProfile(!showProfile);
+  };
+
+  const openUserSpaceProfile = () => {
+    setShowProfile(false);
+    window.dispatchEvent(new CustomEvent('toggle-user-space', { detail: { tab: 'profile' } }));
   };
 
   const unreadCount = Math.max(0, (notifications?.length || 0) - readCount);
@@ -91,88 +107,129 @@ export default function Header() {
       </div>
 
       {/* Right: Bell + Avatar + Logout */}
-      <div className="flex items-center gap-3 relative" ref={popupRef}>
+      <div className="flex items-center gap-3 relative">
 
         {/* Bell */}
-        <button
-          onClick={handleBellClick}
-          className="p-3 glass rounded-full text-slate-600 hover:text-purple-600 transition-colors relative"
-          title="Notifications"
-        >
-          <Bell size={18} />
-          {unreadCount > 0 && (
-            <span className="absolute top-1.5 right-1.5 min-w-[18px] h-[18px] bg-rose-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white px-0.5">
-              {unreadCount > 9 ? "9+" : unreadCount}
-            </span>
-          )}
-        </button>
+        <div className="relative" ref={popupRef}>
+          <button
+            onClick={handleBellClick}
+            className="p-3 glass rounded-full text-slate-600 hover:text-purple-600 transition-colors relative"
+            title="Notifications"
+          >
+            <Bell size={18} />
+            {unreadCount > 0 && (
+              <span className="absolute top-1.5 right-1.5 min-w-[18px] h-[18px] bg-rose-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white px-0.5">
+                {unreadCount > 9 ? "9+" : unreadCount}
+              </span>
+            )}
+          </button>
 
-        {/* Notification Popup */}
-        {showNotifs && (
-          <div className="absolute top-14 right-0 w-96 bg-white/95 backdrop-blur-2xl border border-purple-100/60 rounded-2xl shadow-2xl z-50 overflow-hidden">
-            {/* Header */}
-            <div className="p-4 border-b border-slate-100 bg-gradient-to-r from-purple-50 to-indigo-50 flex justify-between items-center">
-              <h3 className="font-bold text-slate-800 flex items-center gap-2">
-                <Bell size={16} className="text-purple-500" />
-                Notifications
-              </h3>
-              {notifications && notifications.length > 0 && (
-                <span className="text-xs text-emerald-600 font-semibold flex items-center gap-1">
-                  <CheckCheck size={13} /> All Read
-                </span>
-              )}
-            </div>
-
-            {/* List */}
-            <div className="max-h-[420px] overflow-y-auto divide-y divide-slate-50">
-              {notifications && notifications.length > 0 ? (
-                notifications.map((notif, idx) => {
-                  const text = typeof notif === 'string' ? notif : notif.text;
-                  const ts = typeof notif === 'object' ? notif.ts : null;
-                  const style = getNotifStyle(notif);
-                  return (
-                    <div key={idx} className={`p-4 hover:brightness-95 transition-all text-sm ${style.bg}`}>
-                      <div className="flex items-start gap-3">
-                        <span className={`mt-1.5 w-2 h-2 flex-shrink-0 rounded-full ${style.dot} shadow-[0_0_6px_currentColor]`}></span>
-                        <div className="flex-1 min-w-0">
-                          <p className={`leading-snug ${style.text}`}>{text}</p>
-                          {ts && (
-                            <p className="text-xs text-slate-400 mt-1">{getRelativeTime(ts)}</p>
-                          )}
+          {/* Notification Popup */}
+          {showNotifs && (
+            <div className="absolute top-14 right-0 w-96 bg-white/95 backdrop-blur-2xl border border-purple-100/60 rounded-2xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+              <div className="p-4 border-b border-slate-100 bg-gradient-to-r from-purple-50 to-indigo-50 flex justify-between items-center">
+                <h3 className="font-bold text-slate-800 flex items-center gap-2">
+                  <Bell size={16} className="text-purple-500" />
+                  Notifications
+                </h3>
+                {notifications && notifications.length > 0 && (
+                  <span className="text-xs text-emerald-600 font-semibold flex items-center gap-1">
+                    <CheckCheck size={13} /> All Read
+                  </span>
+                )}
+              </div>
+              <div className="max-h-[420px] overflow-y-auto divide-y divide-slate-50">
+                {notifications && notifications.length > 0 ? (
+                  notifications.map((notif, idx) => {
+                    const text = typeof notif === 'string' ? notif : notif.text;
+                    const ts = typeof notif === 'object' ? notif.ts : null;
+                    const style = getNotifStyle(notif);
+                    return (
+                      <div key={idx} className={`p-4 hover:brightness-95 transition-all text-sm ${style.bg}`}>
+                        <div className="flex items-start gap-3">
+                          <span className={`mt-1.5 w-2 h-2 flex-shrink-0 rounded-full ${style.dot} shadow-[0_0_6px_currentColor]`}></span>
+                          <div className="flex-1 min-w-0">
+                            <p className={`leading-snug ${style.text}`}>{text}</p>
+                            {ts && (
+                              <p className="text-xs text-slate-400 mt-1">{getRelativeTime(ts)}</p>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="p-8 text-center text-slate-400 text-sm">
-                  <Bell size={32} className="mx-auto mb-2 opacity-30" />
-                  No notifications
-                </div>
-              )}
+                    );
+                  })
+                ) : (
+                  <div className="p-8 text-center text-slate-400 text-sm">
+                    <Bell size={32} className="mx-auto mb-2 opacity-30" />
+                    No notifications
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        )}
-
-        {/* Avatar - Clickable to open User Space (handled by the fixed UserSpace component usually, but we can trigger it) */}
-        {/* Since UserSpace is a fixed floating panel, the user might expect clicking the avatar to open it or show similar info. */}
-        <div
-          className="h-10 w-10 rounded-full bg-gradient-to-tr from-purple-600 to-blue-500 flex items-center justify-center text-white font-bold shadow-md hover:shadow-lg hover:scale-105 transition-all cursor-pointer border-2 border-white"
-          title={`Signed in as ${user?.name}`}
-          onClick={() => {
-             // We can use a custom event or just let the user use the floating button.
-             // But to fulfill "Make User Clickable", I'll add a simple tooltip or just hint that they can manage profile in User Space.
-             alert(`Logged in as: ${user?.name}\nRole: ${user?.role}\nYou can manage your tasks and profile in the "User Space" button at the bottom right.`);
-          }}
-        >
-          {getInitials(user?.name)}
+          )}
         </div>
 
-        {/* Logout */}
+        {/* Avatar & Profile Popup */}
+        <div className="relative" ref={profileRef}>
+          <div
+            className="h-10 w-10 rounded-full bg-gradient-to-tr from-purple-600 to-blue-500 flex items-center justify-center text-white font-bold shadow-md hover:shadow-lg hover:scale-105 transition-all cursor-pointer border-2 border-white"
+            onClick={handleAvatarClick}
+          >
+            {getInitials(user?.name)}
+          </div>
+
+          {showProfile && (
+            <div className="absolute top-14 right-0 w-72 bg-white/95 backdrop-blur-2xl border border-purple-100/60 rounded-2xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+              <div className="p-6 text-center bg-gradient-to-br from-purple-50 to-indigo-50 border-b border-slate-100">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-purple-600 to-blue-500 flex items-center justify-center text-white text-2xl font-bold shadow-xl mx-auto mb-3">
+                  {getInitials(user?.name)}
+                </div>
+                <button 
+                  onClick={openUserSpaceProfile}
+                  className="text-lg font-bold text-slate-800 hover:text-purple-600 flex items-center justify-center gap-1.5 mx-auto group"
+                >
+                  {user?.name}
+                  <ExternalLink size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                </button>
+                <div className="flex items-center justify-center gap-1.5 text-[10px] font-black text-purple-600 bg-purple-100/50 px-2 py-0.5 rounded-full mt-1 w-fit mx-auto uppercase tracking-wider">
+                  <Shield size={10} /> {user?.role}
+                </div>
+              </div>
+              <div className="p-4 space-y-1">
+                <button 
+                  onClick={openUserSpaceProfile}
+                  className="w-full text-left p-3 rounded-xl hover:bg-slate-50 transition flex items-center gap-3 group"
+                >
+                  <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 group-hover:bg-purple-100 group-hover:text-purple-600 transition-colors">
+                    <User size={16} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-slate-700">User Space</p>
+                    <p className="text-[10px] text-slate-400 font-medium">Manage tasks & security</p>
+                  </div>
+                </button>
+                <button 
+                  onClick={logout}
+                  className="w-full text-left p-3 rounded-xl hover:bg-rose-50 transition flex items-center gap-3 group"
+                >
+                  <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 group-hover:bg-rose-100 group-hover:text-rose-600 transition-colors">
+                    <LogOut size={16} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-slate-700">Sign Out</p>
+                    <p className="text-[10px] text-slate-400 font-medium">Log out of your session</p>
+                  </div>
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Simple Logout as fallback icon if needed, but we have it in profile now */}
         <button
           onClick={logout}
-          className="p-3 glass rounded-full text-slate-600 hover:text-rose-600 transition-colors"
-          title="Log out"
+          className="p-3 glass rounded-full text-slate-600 hover:text-rose-600 transition-colors hidden md:block"
+          title="Quick Log out"
         >
           <LogOut size={18} />
         </button>
