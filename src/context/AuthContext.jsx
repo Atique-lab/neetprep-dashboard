@@ -1,32 +1,32 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState } from 'react';
 
 const AuthContext = createContext();
 
+// Mid-level passwords — not based on usernames
+const USER_CREDENTIALS = {
+  atique:   { password: 'Solar@2026',  role: 'admin',   name: 'Atique' },
+  himanshu: { password: 'Orbit#91x',   role: 'admin',   name: 'Himanshu' },
+  praveen:  { password: 'Meteor$47',   role: 'manager', name: 'Praveen' },
+  poonam:   { password: 'Galaxy!83k',  role: 'manager', name: 'Poonam' },
+  mukta:    { password: 'Nebula@52',   role: 'manager', name: 'Mukta' },
+  gurpreet: { password: 'Comet#76z',   role: 'manager', name: 'Gurpreet' },
+  kapil:    { password: 'Quasar$29',   role: 'manager', name: 'Kapil' },
+};
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
-    const savedUser = sessionStorage.getItem('auth_user');
-    return savedUser ? JSON.parse(savedUser) : null;
+    const saved = sessionStorage.getItem('auth_user');
+    return saved ? JSON.parse(saved) : null;
   });
 
   const login = (username, password) => {
-    // Admin Check
-    if (username.toLowerCase() === 'atique' && password.toLowerCase() === 'atique') {
-      const adminUser = { role: 'admin', name: 'Atique', username: 'Atique' };
-      setUser(adminUser);
-      sessionStorage.setItem('auth_user', JSON.stringify(adminUser));
-      return { success: true };
-    }
+    const key = username.toLowerCase().trim();
+    const cred = USER_CREDENTIALS[key];
 
-    // Manager Check
-    const allowedManagers = ['Praveen', 'Poonam', 'Mukta', 'Gurpreet', 'Kapil'];
-    
-    // Check if the username matches an allowed manager (case-insensitive)
-    const manager = allowedManagers.find(m => m.toLowerCase() === username.toLowerCase());
-    
-    if (manager && password.toLowerCase() === username.toLowerCase()) {
-      const managerUser = { role: 'manager', name: manager, username: manager };
-      setUser(managerUser);
-      sessionStorage.setItem('auth_user', JSON.stringify(managerUser));
+    if (cred && password === cred.password) {
+      const loggedInUser = { role: cred.role, name: cred.name, username: cred.name };
+      setUser(loggedInUser);
+      sessionStorage.setItem('auth_user', JSON.stringify(loggedInUser));
       return { success: true };
     }
 

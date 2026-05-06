@@ -1,6 +1,26 @@
 import { useState, useEffect } from "react";
 import { useGlobalData } from "../context/DashboardContext";
 
+// Normalize Razorpay variants into a single label
+const normalizePaymentMethod = (method) => {
+  if (!method) return "Unknown";
+  const m = method.trim().toLowerCase();
+  if (m.includes("razorpay") || m.includes("razor pay")) return "Razorpay";
+  return method.trim();
+};
+
+// Format raw DB payment method names into human-readable labels
+const formatMethod = (m) => {
+  if (m === "Razorpay") return "Razorpay";
+  const map = {
+    cash_centre: "Cash at Centre",
+    online_centre: "Online via Centre",
+    "Online Through NEETprep Link": "NEETprep Link",
+    "Paid in NEETprep A/c": "Bank Transfer",
+  };
+  return map[m] || m.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+};
+
 export function useDashboardData() {
   const { filteredData, rawData, extraData, loading, error } = useGlobalData();
   const [data, setData] = useState({
@@ -35,6 +55,16 @@ export function useDashboardData() {
     notifications: [],
     monthlyData: [],
     dailyComparison: [],
+    // Session comparison data for all pages
+    lastSessionComparison: {
+      managerMap: {},
+      centreMap: {},
+      revenueBreakdown: { neetprep: 0, centre: 0, gst: 0, total: 0 },
+      paymentMethods: {},
+      emailSet: new Set(),
+      monthlyByManager: {},
+      monthlyByCentre: {},
+    },
   });
 
   useEffect(() => {
@@ -58,13 +88,30 @@ export function useDashboardData() {
 
     const processRows = (rows) => {
       if (!rows || rows.length <= 1) return [];
-      return rows.slice(1).map((row) => ({
-        date: row[1],
-        email: (row[4] || "").toString().trim().toLowerCase(),
-        revenue: parseNumber(row[11]),
-        neetprep: parseNumber(row[20]),
-        type: (row[12] || "").toString().trim(),
-      })).filter(row => row.date);
+      return rows.slice(1).map((row) => {
+        const rawMethod = (row[8] || "").toString().trim();
+        const normalizedMethod = (rawMethod.toLowerCase().includes("razorpay") || rawMethod.toLowerCase().includes("razor pay")) 
+          ? "Razorpay" 
+          : rawMethod;
+
+        return {
+          date: row[1],
+          email: (row[4] || "").toString().trim().toLowerCase(),
+          centre: (row[6] || "").toString().trim(),
+          course: (row[7] || "").toString().trim(),
+          paymentMethod: normalizedMethod,
+          revenue: parseNumber(row[11]),
+          intExt: (row[12] || "").toString().trim(),
+          paymentTo: (row[13] || "").toString().trim(),
+          gst: parseNumber(row[14]),
+          courier: parseNumber(row[15]),
+          printingCost: parseNumber(row[16]),
+          centreShare: parseNumber(row[17]),
+          neetprep: parseNumber(row[20]),
+          manager: (row[21] || "").toString().trim(),
+          type: (row[12] || "").toString().trim(),
+        };
+      }).filter(row => row.date);
     };
 
     const processed = processRows(filteredData);
@@ -81,6 +128,85 @@ export function useDashboardData() {
     });
     const lastSessionStudents = Object.keys(lastSessionEmailMap).length;
     const totalLastSessionRevenue = Object.values(lastSessionEmailMap).reduce((s, v) => s + v, 0);
+
+    // ═══════════════════════════════════════════
+    // BUILD LAST SESSION COMPARISON DATA
+    // ═══════════════════════════════════════════
+
+    // Last Session — Email Set for "Returning" detection
+    const lastSessionEmailSet = new Set(
+      lastSessionProcessed.map(d => d.email).filter(Boolean)
+    );
+
+    // Last Session — Manager Map
+    const lsManagerMap = {};
+    const lsMonthlyByManager = {};
+    lastSessionProcessed.forEach(d => {
+      const mgr = d.manager || "Unassigned";
+      if (mgr === "Unassigned" || !mgr) return;
+      if (!lsManagerMap[mgr]) lsManagerMap[mgr] = { revenue: 0, students: 0, centresSet: new Set() };
+      lsManagerMap[mgr].revenue += d.neetprep;
+      lsManagerMap[mgr].students += 1;
+      lsManagerMap[mgr].centresSet.add(d.centre);
+
+      const month = getMonth(d.date);
+      if (month) {
+        if (!lsMonthlyByManager[mgr]) lsMonthlyByManager[mgr] = {};
+        lsMonthlyByManager[mgr][month] = (lsMonthlyByManager[mgr][month] || 0) + d.neetprep;
+      }
+    });
+
+    // Last Session — Centre Map
+    const lsCentreMap = {};
+    const lsMonthlyByCentre = {};
+    lastSessionProcessed.forEach(d => {
+      const ctr = d.centre || "Unknown";
+      if (ctr === "Unknown") return;
+      if (!lsCentreMap[ctr]) lsCentreMap[ctr] = { revenue: 0, students: 0, internal: 0, external: 0, neetprep: 0, centreShare: 0, printingCost: 0 };
+      lsCentreMap[ctr].revenue += d.revenue;
+      lsCentreMap[ctr].students += 1;
+      lsCentreMap[ctr].neetprep += d.neetprep;
+      lsCentreMap[ctr].centreShare += d.centreShare;
+      lsCentreMap[ctr].printingCost += d.printingCost;
+      if (d.intExt.toLowerCase().includes("internal")) lsCentreMap[ctr].internal += 1;
+      else if (d.intExt.toLowerCase().includes("external")) lsCentreMap[ctr].external += 1;
+
+      const month = getMonth(d.date);
+      if (month) {
+        if (!lsMonthlyByCentre[ctr]) lsMonthlyByCentre[ctr] = {};
+        lsMonthlyByCentre[ctr][month] = (lsMonthlyByCentre[ctr][month] || 0) + d.revenue;
+      }
+    });
+
+    // Last Session — Revenue Breakdown
+    let lsNeetprep = 0, lsCentre = 0, lsGst = 0;
+    lastSessionProcessed.forEach(d => {
+      lsNeetprep += d.neetprep;
+      lsCentre += d.centreShare;
+      lsGst += d.gst;
+    });
+
+    // Last Session — Payment Methods (with Razorpay normalization)
+    const lsPaymentMethodMap = {};
+    lastSessionProcessed.forEach(d => {
+      const normalized = normalizePaymentMethod(d.paymentMethod);
+      const label = formatMethod(normalized);
+      lsPaymentMethodMap[label] = (lsPaymentMethodMap[label] || 0) + d.revenue;
+    });
+
+    const lastSessionComparison = {
+      managerMap: lsManagerMap,
+      centreMap: lsCentreMap,
+      revenueBreakdown: { neetprep: lsNeetprep, centre: lsCentre, gst: lsGst, total: lsNeetprep + lsCentre },
+      paymentMethods: lsPaymentMethodMap,
+      emailSet: lastSessionEmailSet,
+      monthlyByManager: lsMonthlyByManager,
+      monthlyByCentre: lsMonthlyByCentre,
+    };
+
+    // ═══════════════════════════════════════════
+    // CURRENT SESSION PROCESSING (existing)
+    // ═══════════════════════════════════════════
 
     const monthsOrder = [
       "Mar", "Apr", "May", "Jun", "Jul", "Aug",
@@ -116,20 +242,14 @@ export function useDashboardData() {
 
     // ── Use REAL calendar month from today's date ──────────────────────────
     const now = new Date();
-    // 3-letter month abbreviation matching Google Sheet format (e.g. "May", "Apr")
-    const currentMonthName = now.toLocaleString("default", { month: "short" }); // "May"
+    const currentMonthName = now.toLocaleString("default", { month: "short" });
     const prevDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const prevMonthName = prevDate.toLocaleString("default", { month: "short" }); // "Apr"
-    const todayDay = now.getDate(); // e.g. 5
+    const prevMonthName = prevDate.toLocaleString("default", { month: "short" });
+    const todayDay = now.getDate();
 
-    // This Month revenue = ALL entries in current calendar month
     const currentRevenue = monthlyMap[currentMonthName] || 0;
-
-    // Last Month revenue = ALL entries in last calendar month (full month total)
     const lastMonthRevFull = monthlyMap[prevMonthName] || 0;
 
-    // MTD of last month = entries in last month up to same day-of-month as today
-    // (for a fair apples-to-apples growth comparison)
     let mtdPrevRevenue = 0;
     processed.forEach(d => {
       if (getMonth(d.date) === prevMonthName) {
@@ -147,20 +267,18 @@ export function useDashboardData() {
     if (totalLastSessionRevenue > 0) {
       sessionGrowth = ((totalRevenueAll - totalLastSessionRevenue) / totalLastSessionRevenue) * 100;
     }
-    // Growth = This Month MTD vs Last Month MTD (same day range)
     if (prevRevenue > 0) {
       monthlyGrowth = ((currentRevenue - prevRevenue) / prevRevenue) * 100;
     }
 
-
-    // Fix #5: Deduplicate current session by email for fair enrolment growth comparison
+    // Deduplicate current session by email for fair enrolment growth comparison
     const currentUniqueEmails = new Set(processed.map(d => d.email).filter(Boolean));
     const currentUniqueCount = currentUniqueEmails.size || processed.length;
     const enrolmentGrowth = lastSessionStudents > 0
       ? (((currentUniqueCount - lastSessionStudents) / lastSessionStudents) * 100)
       : 0;
 
-    // Fix #6: Revenue growth uses only months that exist in current session (fair YTD comparison)
+    // Revenue growth uses only months that exist in current session (fair YTD comparison)
     const currentSessionMonths = monthsOrder.filter(m => monthlyMap[m] !== undefined);
     const lastSessionYTDRevenue = currentSessionMonths.reduce((sum, m) => sum + (lastMonthlyMap[m] || 0), 0);
     const revenueGrowthVsLastSession = lastSessionYTDRevenue > 0
@@ -188,6 +306,14 @@ export function useDashboardData() {
       }
     });
 
+    // Helper to normalize payment methods
+    const normalizePayment = (method) => {
+      if (!method) return "Unknown";
+      const m = method.toLowerCase();
+      if (m.includes("razorpay") || m.includes("razor pay")) return "Razorpay";
+      return method;
+    };
+
     // Yesterday Enrolments (External / Internal / Total)
     const today = new Date();
     const yesterday = new Date();
@@ -199,7 +325,6 @@ export function useDashboardData() {
 
     let yesterdayExternal = 0;
     let yesterdayInternal = 0;
-    // Fix #2: trim both sides to handle trailing spaces/tabs from Google Sheets
     const validRows = filteredData.slice(1).filter(r => r[1]);
 
     validRows.forEach(row => {
@@ -216,7 +341,6 @@ export function useDashboardData() {
     const managerMap = {};
     const courseMap = {};
     const centreMap = {};
-    // Fix #16: notifications stored as objects with text + timestamp
     const notifs = [];
     const notifTimestamp = new Date().toISOString();
     let zeroPaidStudents = 0;
@@ -227,10 +351,10 @@ export function useDashboardData() {
       const amount = parseNumber(row[11]);
       const centre = row[6];
       const manager = row[21];
-      const centreShare = parseNumber(row[17]);
+      const centreShareVal = parseNumber(row[17]);
 
       if (amount === 0) zeroPaidStudents++;
-      if (amount > 0 && centreShare === 0 && centre) {
+      if (amount > 0 && centreShareVal === 0 && centre) {
         if (notifs.length < 20) {
           notifs.push({ text: `Zero Centre Share for student ${name || 'Unknown'} at ${centre}`, ts: notifTimestamp });
         }
@@ -310,10 +434,9 @@ export function useDashboardData() {
       notifications: notifs,
       monthlyData,
       dailyComparison,
+      lastSessionComparison,
     });
   }, [filteredData, extraData, loading, error]);
 
   return { ...data, rawData, filteredData, extraData, loading, error };
 }
-
-
