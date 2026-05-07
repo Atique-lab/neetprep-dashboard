@@ -251,7 +251,16 @@ export default function UserSpace() {
                       onChange={e => setNewPassword(e.target.value)}
                       className="flex-1 px-5 py-4 rounded-2xl border border-slate-200 focus:ring-4 focus:ring-purple-500/10 text-base"
                     />
-                    <button onClick={() => { alert("Password Updated!"); setNewPassword(""); }} className="px-8 py-4 bg-slate-800 text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-lg">Update</button>
+                    <button 
+                      onClick={() => { 
+                        if (!newPassword.trim()) return alert("Please enter a new password");
+                        alert("Password Updated Successfully!"); 
+                        setNewPassword(""); 
+                      }} 
+                      className="px-8 py-4 bg-slate-800 text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-lg hover:bg-slate-900 transition-colors"
+                    >
+                      Update
+                    </button>
                  </div>
               </div>
             </div>
@@ -327,7 +336,7 @@ export default function UserSpace() {
                {suggestions.map((s, i) => (
                  <button
                     key={i}
-                    onClick={() => addTask({ text: s, type: "General", priority: "Medium", relatedTo: "Global" }, "/")}
+                    onClick={() => addTask({ text: s, type: "General", priority: "Medium", relatedTo: "Global" })}
                     className="w-full text-left text-[11px] font-bold text-slate-600 bg-slate-50 hover:bg-purple-600 hover:text-white p-3 rounded-xl transition-all border border-slate-100 group flex items-center justify-between"
                  >
                    {s} <ChevronRight size={12} className="opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -363,12 +372,13 @@ function TaskItem({ task, onToggle, onDelete }) {
   return (
     <div className={`flex items-center gap-5 group px-6 py-6 rounded-[2rem] transition-all border shadow-sm ${
       task.completed ? "bg-slate-50/50 border-transparent opacity-60" : "bg-white border-white hover:border-purple-200 hover:shadow-xl hover:shadow-purple-500/5"
-    }`}>
+    } ${task.isOptimistic ? "opacity-50 animate-pulse pointer-events-none" : ""}`}>
       <button
         onClick={() => onToggle(task.id)}
         className={`w-7 h-7 rounded-xl border-2 flex items-center justify-center shrink-0 transition-all ${
           task.completed ? "bg-emerald-500 border-emerald-500 text-white" : "border-slate-200 hover:border-purple-500 bg-slate-50"
         }`}
+        disabled={task.isOptimistic}
       >
         {task.completed && <CheckCheck size={16} />}
       </button>

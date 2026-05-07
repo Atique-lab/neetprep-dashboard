@@ -35,9 +35,9 @@ export function useTaskStore(currentPath) {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchTasks = useCallback(async () => {
+  const fetchTasks = useCallback(async (showLoading = true) => {
     if (!user) return;
-    setLoading(true);
+    if (showLoading) setLoading(true);
     try {
       const { data, error } = await supabase
         .from('tasks')
@@ -59,7 +59,7 @@ export function useTaskStore(currentPath) {
     } catch (err) {
       console.error("Critical Task Store Error:", err.message);
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   }, [user]);
 
@@ -67,44 +67,71 @@ export function useTaskStore(currentPath) {
     fetchTasks();
 
     // Subscribe to real-time changes
-    const channel = supabase
-      .channel('tasks_changes')
-      .on('postgres_changes', { event: '*', table: 'tasks', filter: `assigned_to=eq.${user?.name}` }, () => {
-        fetchTasks();
-      })
-      .subscribe();
+    if (user?.name) {
+      const channel = supabase
+        .channel(`tasks_sync_${user.name}`)
+        .on('postgres_changes', { 
+          event: '*', 
+          table: 'tasks', 
+          filter: `assigned_to=eq.${user.name}` 
+        }, () => {
+          // Re-fetch in background without showing the loading spinner
+          fetchTasks(false);
+        })
+        .subscribe();
 
-    // Listen for manual refresh events from Header
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+  }, [user?.name, fetchTasks]);
+
+  useEffect(() => {
     const handleManualRefresh = () => fetchTasks();
     window.addEventListener('refresh-tasks', handleManualRefresh);
-
-    return () => {
-      supabase.removeChannel(channel);
-      window.removeEventListener('refresh-tasks', handleManualRefresh);
-    };
-  }, [user, fetchTasks]);
+    return () => window.removeEventListener('refresh-tasks', handleManualRefresh);
+  }, [fetchTasks]);
 
   const addTask = useCallback(async (taskData) => {
     if (!user || !taskData.text?.trim()) return;
     
+    // Optimistic update
+    const tempId = Math.random().toString(36).substring(7);
+    const optimisticTask = {
+      id: tempId,
+      text: taskData.text.trim(),
+      type: taskData.type || 'General',
+      priority: taskData.priority || 'Medium',
+      relatedTo: taskData.relatedTo || 'Global',
+      dueDate: taskData.dueDate || '',
+      assigned_to: user.name,
+      assignedBy: user.name,
+      completed: false,
+      isOptimistic: true
+    };
+    
+    setTasks(prev => [optimisticTask, ...prev]);
+
     try {
       const { error } = await supabase
         .from('tasks')
         .insert([{
           text: taskData.text.trim(),
-          type: taskData.type,
-          priority: taskData.priority,
-          related_to: taskData.relatedTo,
-          due_date: taskData.dueDate,
+          type: optimisticTask.type,
+          priority: optimisticTask.priority,
+          related_to: optimisticTask.relatedTo,
+          due_date: optimisticTask.dueDate,
           assigned_to: user.name,
           assigned_by: user.name,
           completed: false
         }]);
 
       if (error) throw error;
-      fetchTasks();
+      fetchTasks(false);
     } catch (err) {
       console.error("Error adding task:", err);
+      // Revert on error
+      setTasks(prev => prev.filter(t => t.id !== tempId));
     }
   }, [user, fetchTasks]);
 
@@ -125,8 +152,7 @@ export function useTaskStore(currentPath) {
         }]);
 
       if (error) throw error;
-      // If we assigned to ourselves, refresh. Otherwise, it doesn't affect our list.
-      if (toUsername === user?.name) fetchTasks();
+      if (toUsername === user?.name) fetchTasks(false);
     } catch (err) {
       console.error("Error sending task:", err);
     }
@@ -136,6 +162,9 @@ export function useTaskStore(currentPath) {
     const task = tasks.find(t => t.id === id);
     if (!task) return;
 
+    // Optimistic update
+    setTasks(prev => prev.map(t => t.id === id ? { ...t, completed: !t.completed } : t));
+
     try {
       const { error } = await supabase
         .from('tasks')
@@ -143,13 +172,18 @@ export function useTaskStore(currentPath) {
         .eq('id', id);
 
       if (error) throw error;
-      fetchTasks();
     } catch (err) {
       console.error("Error toggling task:", err);
+      // Revert on error
+      setTasks(prev => prev.map(t => t.id === id ? { ...t, completed: task.completed } : t));
     }
-  }, [tasks, fetchTasks]);
+  }, [tasks]);
 
   const deleteTask = useCallback(async (id) => {
+    const originalTasks = [...tasks];
+    // Optimistic update
+    setTasks(prev => prev.filter(t => t.id !== id));
+
     try {
       const { error } = await supabase
         .from('tasks')
@@ -157,14 +191,18 @@ export function useTaskStore(currentPath) {
         .eq('id', id);
 
       if (error) throw error;
-      fetchTasks();
     } catch (err) {
       console.error("Error deleting task:", err);
+      setTasks(originalTasks);
     }
-  }, [fetchTasks]);
+  }, [tasks]);
 
   const clearCompleted = useCallback(async () => {
     if (!user) return;
+    const originalTasks = [...tasks];
+    // Optimistic update
+    setTasks(prev => prev.filter(t => !t.completed));
+
     try {
       const { error } = await supabase
         .from('tasks')
@@ -173,11 +211,11 @@ export function useTaskStore(currentPath) {
         .eq('completed', true);
 
       if (error) throw error;
-      fetchTasks();
     } catch (err) {
       console.error("Error clearing completed tasks:", err);
+      setTasks(originalTasks);
     }
-  }, [user, fetchTasks]);
+  }, [user, tasks]);
 
   const suggestions = PAGE_SUGGESTIONS[currentPath] || [];
   const unusedSuggestions = suggestions.filter(
