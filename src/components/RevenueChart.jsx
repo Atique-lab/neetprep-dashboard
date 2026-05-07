@@ -107,10 +107,11 @@ export default function RevenueChart({ monthlyData, rawData }) {
               }}
               itemStyle={{ color: '#1e293b', fontWeight: 600 }}
               labelStyle={{ color: '#64748b', marginBottom: '4px', fontSize: '13px' }}
-              formatter={(value, name) => [
-                `₹${value.toLocaleString()}`, 
-                name === 'lastRevenue' ? 'Last Session' : 'Current Session'
-              ]}
+              formatter={(value, name) => {
+                if (name === 'lastRevenue') return [`₹${value.toLocaleString()}`, 'Last Session'];
+                if (name === 'projectedRevenue') return [`₹${value.toLocaleString()}`, 'Anticipated'];
+                return [`₹${value.toLocaleString()}`, 'Current Session'];
+              }}
               labelFormatter={(label, payload) => {
                 if (viewMode === 'daily' && payload && payload.length > 0) {
                   return payload[0].payload.fullDate || label;
@@ -143,6 +144,19 @@ export default function RevenueChart({ monthlyData, rawData }) {
               activeDot={{ r: 6, strokeWidth: 4, stroke: '#fff', fill: '#8b5cf6', className: "shadow-lg" }}
               style={viewMode === "monthly" ? { cursor: "pointer" } : {}}
             />
+
+            {viewMode === "monthly" && (
+              <Area
+                type="monotone"
+                dataKey="projectedRevenue"
+                name="projectedRevenue"
+                stroke="#a855f7"
+                strokeWidth={2}
+                strokeDasharray="8 4"
+                fill="transparent"
+                activeDot={{ r: 4, strokeWidth: 2, stroke: '#fff', fill: '#a855f7' }}
+              />
+            )}
           </AreaChart>
         </ResponsiveContainer>
       </div>

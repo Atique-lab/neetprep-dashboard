@@ -5,13 +5,16 @@ import App from "./App";
 import "./index.css";
 import { DashboardProvider } from "./context/DashboardContext";
 import { AuthProvider } from "./context/AuthContext";
+import { ThemeProvider } from "./context/ThemeContext";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <BrowserRouter>
     <AuthProvider>
-      <DashboardProvider>
-        <App />
-      </DashboardProvider>
+      <ThemeProvider>
+        <DashboardProvider>
+          <App />
+        </DashboardProvider>
+      </ThemeProvider>
     </AuthProvider>
   </BrowserRouter>
 );

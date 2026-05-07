@@ -36,7 +36,7 @@ export default function KPICard({ title, value, subtitle, icon, color }) {
         <div className="flex items-end gap-2 mb-1 flex-wrap">
           {/* Fix #11: break-all prevents large numbers from overflowing, no hard truncate */}
           <h2
-            className="text-xl xl:text-2xl 2xl:text-3xl font-bold text-slate-800 tracking-tight leading-tight break-all"
+            className="text-xl xl:text-2xl 2xl:text-3xl font-bold text-slate-800 dark:text-slate-100 tracking-tight leading-tight break-all"
             title={typeof value === 'string' || typeof value === 'number' ? String(value) : ''}
           >
             {value}
@@ -48,7 +48,7 @@ export default function KPICard({ title, value, subtitle, icon, color }) {
           )}
         </div>
         {/* Fix #11: allow 2-line title instead of hard truncate */}
-        <p className="text-slate-500 text-sm font-medium leading-snug line-clamp-2">
+        <p className="text-slate-500 dark:text-slate-400 text-sm font-medium leading-snug line-clamp-2">
           {title}
         </p>
       </div>

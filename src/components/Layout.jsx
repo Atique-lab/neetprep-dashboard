@@ -1,10 +1,14 @@
 import Sidebar from "./Sidebar";
 import Header from "./Header";
+import CommandPalette from "./CommandPalette";
+import FloatingActions from "./FloatingActions";
 import { Outlet } from "react-router-dom";
 
 export default function Layout() {
   return (
-    <div className="flex min-h-screen text-slate-800 font-sans">
+    <div className="flex min-h-screen text-slate-800 font-sans relative">
+      <CommandPalette />
+      <FloatingActions />
 
       {/* Sidebar Wrapper - Floating design */}
       <div className="p-4 hidden lg:block w-72">

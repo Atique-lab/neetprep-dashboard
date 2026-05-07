@@ -3,12 +3,14 @@ import { useNavigate } from "react-router-dom";
 import { useGlobalData } from "../context/DashboardContext";
 import { useAuth } from "../context/AuthContext";
 import { useDashboardData } from "../hooks/useDashboardData";
-import { Bell, LogOut, CheckCheck, Calendar, User, Shield, ExternalLink, RefreshCw } from "lucide-react";
+import { Bell, LogOut, CheckCheck, Calendar, User, Shield, ExternalLink, RefreshCw, Sun, Moon } from "lucide-react";
+import { useTheme } from "../context/ThemeContext";
 
 export default function Header() {
   const navigate = useNavigate();
   const { dateRange, setDateRange, refreshData } = useGlobalData();
   const { user, logout } = useAuth();
+  const { isDarkMode, toggleTheme } = useTheme();
   const { notifications } = useDashboardData();
   const [showNotifs, setShowNotifs] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
@@ -104,7 +106,7 @@ export default function Header() {
   return (
     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
       {/* Left: Simplified Month Filter */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-4">
         <div className="relative group">
           <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-purple-500 transition-colors">
             <Calendar size={16} />
@@ -119,15 +121,32 @@ export default function Header() {
             ))}
           </select>
         </div>
+
+        {/* Global Filter Badge */}
+        <div className="hidden lg:flex items-center gap-2 px-4 py-2 bg-emerald-50 border border-emerald-100 rounded-xl">
+           <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+           <span className="text-[10px] font-black text-emerald-700 uppercase tracking-widest">
+             Active View: {months.find(m => m.id === dateRange)?.label}
+           </span>
+        </div>
       </div>
 
       {/* Right: Bell + Avatar + Refresh + Logout */}
       <div className="flex items-center gap-3 relative">
 
+        {/* Theme Toggle */}
+        <button
+          onClick={toggleTheme}
+          className="p-3 glass rounded-full text-slate-600 dark:text-slate-300 hover:text-amber-500 dark:hover:text-amber-400 transition-all"
+          title="Toggle Theme"
+        >
+          {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
+        </button>
+
         {/* Refresh Button */}
         <button
           onClick={handleRefresh}
-          className={`p-3 glass rounded-full text-slate-600 hover:text-emerald-600 transition-all ${isRefreshing ? 'rotate-180 text-emerald-600' : ''}`}
+          className={`p-3 glass rounded-full text-slate-600 dark:text-slate-300 hover:text-emerald-600 transition-all ${isRefreshing ? 'rotate-180 text-emerald-600' : ''}`}
           title="Refresh Data & Tasks"
           disabled={isRefreshing}
         >

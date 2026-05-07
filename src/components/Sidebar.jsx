@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, IndianRupee, Users, School, CreditCard, GraduationCap } from "lucide-react";
+import { LayoutDashboard, IndianRupee, Users, School, CreditCard, GraduationCap, ShieldCheck } from "lucide-react";
 
 export default function Sidebar() {
   const location = useLocation();
@@ -11,6 +11,7 @@ export default function Sidebar() {
     { name: "Centres", path: "/centres", icon: <School size={20} /> },
     { name: "Payments", path: "/payments", icon: <CreditCard size={20} /> },
     { name: "Students", path: "/students", icon: <GraduationCap size={20} /> },
+    { name: "Audit", path: "/audit", icon: <ShieldCheck size={20} /> },
   ];
 
   return (
@@ -25,7 +26,7 @@ export default function Sidebar() {
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-purple-500/30">
             N
           </div>
-          <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600 tracking-tight">
+          <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-400 tracking-tight">
             Neetprep
           </h1>
         </div>
@@ -47,7 +48,7 @@ export default function Sidebar() {
                 ${
                   active
                     ? "text-white shadow-md"
-                    : "text-gray-600 hover:bg-white/60 hover:text-gray-900 hover:shadow-sm"
+                    : "text-gray-600 dark:text-gray-400 hover:bg-white/60 dark:hover:bg-slate-800/60 hover:text-gray-900 dark:hover:text-white hover:shadow-sm"
                 }
               `}
             >

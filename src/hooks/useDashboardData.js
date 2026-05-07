@@ -236,11 +236,24 @@ export function useDashboardData() {
 
     const monthlyData = monthsOrder
       .filter(m => monthlyMap[m] !== undefined || lastMonthlyMap[m] !== undefined)
-      .map((m) => ({
-        month: m,
-        revenue: monthlyMap[m] || 0,
-        lastRevenue: lastMonthlyMap[m] || 0,
-      }));
+      .map((m) => {
+        const item = {
+          month: m,
+          revenue: monthlyMap[m] || 0,
+          lastRevenue: lastMonthlyMap[m] || 0,
+        };
+
+        // Add projection for the current month
+        const now = new Date();
+        const currentMonthName = now.toLocaleString("default", { month: "short" });
+        if (m === currentMonthName) {
+          const dayOfMonth = now.getDate();
+          const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+          item.projectedRevenue = Math.round((item.revenue / dayOfMonth) * daysInMonth);
+        }
+        
+        return item;
+      });
 
     // ── Use REAL calendar month from today's date ──────────────────────────
     const now = new Date();
@@ -445,8 +458,25 @@ export function useDashboardData() {
       },
       notifications: notifs,
       monthlyData,
-      dailyComparison,
       lastSessionComparison,
+      reconciliation: (() => {
+        const issues = [];
+        processed.forEach((d, idx) => {
+          // Rule 1: Paid student but zero centre share (for external students)
+          if (d.revenue > 0 && d.centreShare === 0 && d.type.toLowerCase().includes("external") && !d.paymentTo.toLowerCase().includes("neetprep")) {
+            issues.push({ id: idx, type: 'Missing Centre Share', detail: `Student at ${d.centre} has ₹${d.revenue} revenue but ₹0 share.`, severity: 'high', date: d.date });
+          }
+          // Rule 2: Missing GST for online payments
+          if (d.revenue > 0 && d.gst === 0 && d.paymentMethod.toLowerCase().includes("online")) {
+            issues.push({ id: idx, type: 'GST Missing', detail: `Online payment from ${d.centre} is missing GST record.`, severity: 'medium', date: d.date });
+          }
+          // Rule 3: Neetprep share is 0 for non-centre payments
+          if (d.revenue > 0 && d.neetprep === 0 && d.paymentTo.toLowerCase().includes("neetprep")) {
+            issues.push({ id: idx, type: 'NEETprep Share Error', detail: `Payment directed to NEETprep but recorded share is ₹0.`, severity: 'high', date: d.date });
+          }
+        });
+        return issues;
+      })(),
     });
   }, [filteredData, extraData, loading, error]);
 
