@@ -351,6 +351,8 @@ export default function UserSpace() {
 }
 
 function TaskItem({ task, onToggle, onDelete }) {
+  const { user } = useAuth();
+  
   const getPriorityColor = (p) => {
     switch (p) {
       case "Urgent": return "bg-rose-100 text-rose-700 border-rose-200";

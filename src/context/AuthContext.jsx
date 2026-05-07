@@ -79,11 +79,11 @@ export function AuthProvider({ children }) {
             .from('user_profiles')
             .select('avatar_url')
             .eq('username', user.name)
-            .single();
+            .maybeSingle();
           
-          if (data) setProfileImage(data.avatar_url);
+          if (data && data.avatar_url) setProfileImage(data.avatar_url);
         } catch (err) {
-          console.error("Error loading profile image:", err);
+          console.error("Critical Auth Sync Error:", err);
         }
       } else {
         setProfileImage(null);
