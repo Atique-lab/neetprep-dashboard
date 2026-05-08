@@ -6,9 +6,10 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- 2. Payments Table (Fact Table)
 CREATE TABLE IF NOT EXISTS payments (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    external_id TEXT UNIQUE NOT NULL, -- Format: student_name|date|amount|centre|course
+    external_id TEXT UNIQUE NOT NULL, -- Format: student_name|date|amount|centre|course|session
     payment_date DATE NOT NULL,
     student_name TEXT,
+    phone TEXT, -- New: Student Phone
     email TEXT,
     centre_name TEXT,
     course TEXT,
@@ -27,7 +28,19 @@ CREATE TABLE IF NOT EXISTS payments (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 3. Sync Logs Table
+-- 3. Centre Shares Table (Reference Table)
+CREATE TABLE IF NOT EXISTS centre_shares (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    centre_name TEXT UNIQUE NOT NULL,
+    ext_centre_share_pct NUMERIC(5, 2) DEFAULT 0,
+    int_centre_share_pct NUMERIC(5, 2) DEFAULT 0,
+    manager_name TEXT,
+    ext_neetprep_share_pct NUMERIC(5, 2) DEFAULT 0,
+    int_neetprep_share_pct NUMERIC(5, 2) DEFAULT 0,
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 4. Sync Logs Table
 CREATE TABLE IF NOT EXISTS sync_logs (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     sync_type TEXT NOT NULL,
@@ -39,8 +52,7 @@ CREATE TABLE IF NOT EXISTS sync_logs (
     completed_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 4. User Profiles Table (Migration/Fix)
--- Note: Already exists but ensuring correct schema
+-- 5. User Profiles Table
 CREATE TABLE IF NOT EXISTS user_profiles (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     username TEXT UNIQUE NOT NULL,
@@ -51,20 +63,19 @@ CREATE TABLE IF NOT EXISTS user_profiles (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 5. Performance Indexes
+-- 6. Performance Indexes
 CREATE INDEX IF NOT EXISTS idx_payments_date ON payments(payment_date);
 CREATE INDEX IF NOT EXISTS idx_payments_centre ON payments(centre_name);
 CREATE INDEX IF NOT EXISTS idx_payments_session ON payments(session_id);
 CREATE INDEX IF NOT EXISTS idx_payments_manager ON payments(manager_name);
-CREATE INDEX IF NOT EXISTS idx_payments_email ON payments(email);
 
--- 6. Analytical Views
+-- 7. Analytical Views
 CREATE OR REPLACE VIEW session_comparison AS
 WITH stats AS (
     SELECT 
         session_id,
         COUNT(*) as total_records,
-        COUNT(DISTINCT email) as total_students,
+        COUNT(DISTINCT student_name) as total_students,
         SUM(revenue) as total_revenue,
         SUM(neetprep_share) as total_neetprep
     FROM payments

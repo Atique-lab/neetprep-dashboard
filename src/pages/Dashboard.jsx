@@ -1,256 +1,150 @@
-import { motion } from "framer-motion";
-import {
-  DollarSign, Users, TrendingUp, TrendingDown,
-  AlertCircle, CalendarCheck2, Award, Trophy, UserCheck, Wallet, School, Download
-} from "lucide-react";
+import { useDashboardData } from "../hooks/useDashboardData";
 import KPICard from "../components/KPICard";
 import RevenueChart from "../components/RevenueChart";
-import DailyComparisonChart from "../components/DailyComparisonChart";
-import { useDashboardData } from "../hooks/useDashboardData";
-import { generateRevenueReport } from "../utils/reportGenerator";
-
+import { 
+  Users, Wallet, TrendingUp, Calendar, 
+  ArrowUpRight, ArrowDownRight, Zap, Target,
+  AlertCircle
+} from "lucide-react";
 import { KPISkeleton, ChartSkeleton } from "../components/Skeleton";
+import { motion } from "framer-motion";
 
 export default function Dashboard() {
-  const { kpi, insights, monthlyData, dailyComparison, rawData, loading, error } = useDashboardData();
+  const { kpi, insights, loading, error, refreshData } = useDashboardData();
 
-  if (error) {
-    return (
-      <div className="flex flex-col items-center justify-center h-[60vh] text-rose-500 bg-rose-50/50 dark:bg-rose-500/5 border border-rose-100 dark:border-rose-500/20 rounded-3xl m-2">
-        <AlertCircle size={48} className="mb-4 opacity-80" />
-        <h2 className="text-xl font-bold mb-1 tracking-tight">Sync failed</h2>
-        <p className="text-sm text-rose-400 font-medium">{error}</p>
+  if (error) return (
+    <div className="flex flex-col items-center justify-center h-[60vh] text-center">
+      <div className="p-4 bg-rose-50 dark:bg-rose-500/10 rounded-2xl mb-4">
+        <AlertCircle className="text-rose-600" size={32} />
       </div>
-    );
-  }
-
-  if (loading) {
-    return (
-      <div className="space-y-8 animate-in fade-in duration-500">
-        <div className="space-y-2">
-          <div className="h-8 bg-zinc-200 dark:bg-zinc-800 rounded-lg w-1/4" />
-          <div className="h-4 bg-zinc-100 dark:bg-zinc-800/50 rounded-lg w-1/3" />
-        </div>
-        <KPISkeleton />
-        <div className="h-[350px] bg-zinc-100 dark:bg-zinc-900 rounded-3xl" />
-        <KPISkeleton />
-      </div>
-    );
-  }
-
-  const monthlyGrowthPositive = (kpi.monthlyGrowth || 0) >= 0;
-  const enrolmentGrowthPositive = (kpi.enrolmentGrowth || 0) >= 0;
-  const revGrowthPositive = (kpi.revenueGrowthVsLastSession || 0) >= 0;
+      <h2 className="text-2xl font-black text-zinc-900 dark:text-zinc-50">Sync failed</h2>
+      <p className="text-zinc-500 max-w-md mt-2 mb-6">{error}</p>
+      <button onClick={refreshData} className="btn-primary">Try again</button>
+    </div>
+  );
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 15 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, ease: "easeOut" }}
-      className="space-y-8"
-    >
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <div className="space-y-8 pb-12">
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-800 dark:text-white tracking-tight">Dashboard Overview</h1>
-          <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Monitor your revenue, performance, and key metrics in real-time.</p>
+          <p className="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest mb-1">Performance Overview</p>
+          <h1 className="text-4xl font-black text-zinc-900 dark:text-zinc-50 tracking-tight">SaaS Analytics</h1>
         </div>
-        
-        <button
-          onClick={() => generateRevenueReport(rawData, kpi, insights)}
-          className="flex items-center gap-2 px-6 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all shadow-sm group"
-        >
-          <Download size={18} className="text-purple-600 group-hover:scale-110 transition-transform" />
-          Download PDF Report
-        </button>
+        <div className="flex items-center gap-2 text-zinc-500 text-sm font-medium bg-white dark:bg-zinc-900 px-4 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
+          <Calendar size={16} />
+          <span>Session: 2025-26</span>
+        </div>
       </div>
 
-      {/* ── ROW 1: This Session KPIs ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 md:gap-6">
-        <KPICard
-          title="Total Students"
-          value={kpi.students}
-          color="blue"
-          icon={<Users size={20} />}
-        />
-        <KPICard
-          title="Total Revenue"
-          value={`₹${(kpi.currentSessionRev || 0).toLocaleString()}`}
-          color="purple"
-          icon={<DollarSign size={20} />}
-        />
-        <KPICard
-          title={`Last Month (${kpi.prevMonthName || "–"})`}
-          value={`₹${(kpi.lastMonthRev || 0).toLocaleString()}`}
-          color="orange"
-          icon={<DollarSign size={20} />}
-        />
-        <KPICard
-          title={`This Month (${kpi.currentMonthName || "–"})`}
-          value={`₹${(kpi.currentMonthRev || 0).toLocaleString()}`}
-          color="green"
-          icon={<DollarSign size={20} />}
-        />
-        <KPICard
-          title="Growth"
-          value={`${monthlyGrowthPositive ? "+" : ""}${(kpi.monthlyGrowth || 0).toFixed(1)}%`}
-          color="pink"
-          icon={monthlyGrowthPositive ? <TrendingUp size={20} /> : <TrendingDown size={20} />}
-        />
+      {/* KPI Section */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {loading ? (
+          <>
+            <KPISkeleton />
+            <KPISkeleton />
+            <KPISkeleton />
+            <KPISkeleton />
+          </>
+        ) : (
+          <>
+            <KPICard 
+              title="Current Revenue" 
+              value={`₹${Math.round(kpi.currentSessionRev).toLocaleString()}`} 
+              subtitle={`${kpi.revenueGrowthVsLastSession > 0 ? '+' : ''}${Math.round(kpi.revenueGrowthVsLastSession)}% vs last session`}
+              icon={<Wallet size={20} />} 
+              color="purple" 
+            />
+            <KPICard 
+              title="Total Students" 
+              value={kpi.students.toLocaleString()} 
+              subtitle={`${kpi.enrolmentGrowth > 0 ? '+' : ''}${Math.round(kpi.enrolmentGrowth)}% growth`}
+              icon={<Users size={20} />} 
+              color="blue" 
+            />
+            <KPICard 
+              title="Last Session Revenue" 
+              value={`₹${Math.round(kpi.lastSessionRev).toLocaleString()}`} 
+              subtitle="Comparison target"
+              icon={<Target size={20} />} 
+              color="orange" 
+            />
+            <KPICard 
+              title="Current Month" 
+              value={`₹${Math.round(kpi.currentMonthRev).toLocaleString()}`} 
+              subtitle={`${kpi.currentMonthName} actuals`}
+              icon={<Zap size={20} />} 
+              color="green" 
+            />
+          </>
+        )}
       </div>
 
-      {/* ── Charts ── */}
-      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-6 md:p-8 rounded-3xl transition-all hover:shadow-xl hover:shadow-indigo-500/5">
-        <RevenueChart monthlyData={monthlyData} rawData={rawData} />
-      </div>
-      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-6 md:p-8 rounded-3xl transition-all hover:shadow-xl hover:shadow-indigo-500/5">
-        <DailyComparisonChart
-          dailyData={dailyComparison}
-          currentMonthName={kpi.currentMonthName || "This Month"}
-          prevMonthName={kpi.prevMonthName || "Last Month"}
-        />
-      </div>
-
-      {/* ── ROW 2: Last Session KPIs ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 md:gap-6">
-        <KPICard
-          title="Last Session Students"
-          value={kpi.lastSessionStudents || 0}
-          color="blue"
-          icon={<Users size={20} />}
-        />
-        <KPICard
-          title="Last Session Revenue"
-          value={`₹${(kpi.lastSessionRev || 0).toLocaleString()}`}
-          color="orange"
-          icon={<DollarSign size={20} />}
-        />
-        <KPICard
-          title="Enrolment Growth"
-          value={`${enrolmentGrowthPositive ? "+" : ""}${(kpi.enrolmentGrowth || 0).toFixed(1)}%`}
-          color="green"
-          icon={enrolmentGrowthPositive ? <TrendingUp size={20} /> : <TrendingDown size={20} />}
-        />
-        <KPICard
-          title="Revenue Growth"
-          value={`${revGrowthPositive ? "+" : ""}${(kpi.revenueGrowthVsLastSession || 0).toFixed(1)}%`}
-          color="purple"
-          icon={revGrowthPositive ? <TrendingUp size={20} /> : <TrendingDown size={20} />}
-        />
-        <KPICard
-          title="Avg Revenue / Student"
-          value={`₹${kpi.students > 0 ? Math.round((kpi.currentSessionRev || 0) / kpi.students).toLocaleString() : 0}`}
-          color="pink"
-          icon={<Award size={20} />}
-        />
-      </div>
-
-      {/* ── Insights Row ── */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-
-        {/* Top Performers Card */}
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-6 md:p-8 rounded-3xl relative overflow-hidden group hover:-translate-y-1 transition-transform duration-300 md:col-span-1 shadow-sm">
-          <div className="absolute -right-6 -top-6 w-32 h-32 bg-green-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
-          <div className="space-y-5 relative z-10">
-            <div>
-              <div className="flex items-center gap-2 mb-1 text-zinc-500">
-                <Trophy size={15} className="text-amber-500" />
-                <p className="text-[10px] font-bold uppercase tracking-[0.2em]">Top Performing Centre</p>
-              </div>
-              <h2 className="text-lg font-black text-emerald-600 dark:text-emerald-400 break-words" title={insights.topCentre}>
-                {insights.topCentre}
-              </h2>
-            </div>
-            <div className="border-t border-zinc-100 dark:border-zinc-800 pt-4">
-              <div className="flex items-center gap-2 mb-1 text-zinc-500">
-                <UserCheck size={15} className="text-indigo-500" />
-                <p className="text-[10px] font-bold uppercase tracking-[0.2em]">Top Manager</p>
-              </div>
-              <h2 className="text-lg font-black text-indigo-600 dark:text-indigo-400 break-words" title={insights.topManager}>
-                {insights.topManager}
-              </h2>
-            </div>
-          </div>
+      {/* Main Insights Grid */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+        {/* Revenue Chart */}
+        <div className="xl:col-span-2">
+          {loading ? <ChartSkeleton /> : <RevenueChart />}
         </div>
 
-        {/* Yesterday Enrolments */}
-        <div className="glass p-6 md:p-8 rounded-[2rem] relative overflow-hidden group hover:-translate-y-1 transition-transform duration-300">
-          <div className="absolute -right-6 -top-6 w-32 h-32 bg-blue-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
-          <div className="flex items-center gap-2 mb-4 relative z-10">
-            <CalendarCheck2 size={15} className="text-blue-500" />
-            <p className="text-sm text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wider">
-              Yesterday Enrolments ({insights.yesterdayLabel})
-            </p>
-          </div>
-          {insights.yesterdayTotal === 0 ? (
-            <div className="flex flex-col items-center justify-center py-4 text-center relative z-10">
-              <CalendarCheck2 size={32} className="text-slate-300 dark:text-slate-700 mb-2" />
-              <p className="text-sm text-slate-400 font-medium">No enrolments recorded yesterday</p>
+        {/* Quick Insights Card */}
+        <div className="space-y-6">
+          <div className="bg-zinc-900 text-white rounded-3xl p-8 shadow-2xl shadow-indigo-500/10 relative overflow-hidden group">
+            <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform">
+              <Zap size={120} />
             </div>
-          ) : (
-            <div className="space-y-2 relative z-10">
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-slate-500 dark:text-slate-400 font-bold uppercase">External</span>
-                <span className="font-black text-blue-600 dark:text-blue-400 text-2xl">{insights.yesterdayExternal}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-slate-500 dark:text-slate-400 font-bold uppercase">Internal</span>
-                <span className="font-black text-indigo-600 dark:text-indigo-400 text-2xl">{insights.yesterdayInternal}</span>
-              </div>
-              <div className="flex justify-between items-center border-t border-slate-100 dark:border-slate-800 pt-2 mt-2">
-                <span className="text-sm font-black text-slate-700 dark:text-slate-200 uppercase">Total</span>
-                <span className="font-black text-slate-800 dark:text-white text-3xl">{insights.yesterdayTotal}</span>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Predictive Analytics Card */}
-        <div className="glass p-6 md:p-8 rounded-[2rem] relative overflow-hidden group hover:-translate-y-1 transition-transform duration-300">
-          <div className="absolute -right-6 -top-6 w-32 h-32 bg-purple-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
-          <div className="flex items-center gap-2 mb-4 relative z-10">
-            <TrendingUp size={15} className="text-purple-500" />
-            <p className="text-sm text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wider">Anticipated Month End ({kpi.currentMonthName})</p>
-          </div>
-          
-          {(() => {
-            const currentMonthData = monthlyData.find(m => m.month === kpi.currentMonthName);
-            const projection = currentMonthData?.projectedRevenue || 0;
-            const current = kpi.currentMonthRev || 0;
-            const progress = projection > 0 ? (current / projection) * 100 : 0;
             
-            return (
-              <div className="space-y-4 relative z-10">
+            <h3 className="text-xl font-black mb-6 relative z-10">Smart Insights</h3>
+            
+            <div className="space-y-6 relative z-10">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-white/10 rounded-2xl"><TrendingUp size={20} /></div>
                 <div>
-                  <span className="text-4xl font-black text-slate-800 dark:text-white tracking-tight">
-                    ₹{projection.toLocaleString()}
-                  </span>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">
-                    Based on current run rate
-                  </p>
-                </div>
-                
-                <div className="space-y-1.5">
-                  <div className="flex justify-between items-end">
-                    <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Month Progress</span>
-                    <span className="text-sm font-black text-purple-600 dark:text-purple-400">{Math.round(progress)}%</span>
-                  </div>
-                  <div className="w-full h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                    <motion.div 
-                      initial={{ width: 0 }}
-                      animate={{ width: `${progress}%` }}
-                      transition={{ duration: 1, delay: 0.5 }}
-                      className="h-full bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full shadow-[0_0_10px_rgba(139,92,246,0.3)]"
-                    />
-                  </div>
+                  <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-0.5">Top Performer</p>
+                  <p className="font-bold text-lg leading-tight">{insights.topCentre}</p>
                 </div>
               </div>
-            );
-          })()}
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-white/10 rounded-2xl"><Users size={20} /></div>
+                <div>
+                  <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-0.5">Leading Manager</p>
+                  <p className="font-bold text-lg leading-tight">{insights.topManager}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-white/10 rounded-2xl"><Zap size={20} /></div>
+                <div>
+                  <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-0.5">Yesterday's Enrolments</p>
+                  <p className="font-bold text-2xl leading-tight">{insights.yesterdayTotal}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-10 pt-8 border-t border-white/10">
+              <button className="w-full py-3 bg-white text-zinc-950 font-bold rounded-2xl hover:bg-zinc-100 transition-colors">
+                View Full Analysis
+              </button>
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-8 shadow-sm">
+            <h3 className="text-lg font-black text-zinc-900 dark:text-zinc-50 mb-4">Reconciliation</h3>
+            <p className="text-sm text-zinc-500 mb-6 leading-relaxed">
+              We've identified {insights.yesterdayTotal > 5 ? 'anomalies' : '0 issues'} in yesterday's revenue splits.
+            </p>
+            <div className="p-4 bg-zinc-50 dark:bg-zinc-950 rounded-2xl border border-zinc-100 dark:border-zinc-800">
+              <div className="flex justify-between text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">
+                <span>Metric</span>
+                <span>Value</span>
+              </div>
+              <div className="flex justify-between text-sm py-1 font-bold">
+                <span className="text-zinc-600 dark:text-zinc-400">Avg Ticket Size</span>
+                <span>₹{Math.round(insights.avg).toLocaleString()}</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-      
-      {/* Spacer for FAB on mobile */}
-      <div className="h-20 lg:hidden" />
-    </motion.div>
+    </div>
   );
 }

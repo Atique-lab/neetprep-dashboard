@@ -1,168 +1,88 @@
-import { useState } from "react";
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  Tooltip,
-  ResponsiveContainer,
-  CartesianGrid,
-} from "recharts";
-import { ChevronLeft } from "lucide-react";
+import { 
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, 
+  Tooltip, ResponsiveContainer, defs, linearGradient, stop 
+} from 'recharts';
+import { useDashboardData } from "../hooks/useDashboardData";
 
-export default function RevenueChart({ monthlyData, rawData }) {
-  const [dailyData, setDailyData] = useState([]);
-  const [viewMode, setViewMode] = useState("monthly");
-  const [selectedMonth, setSelectedMonth] = useState("");
-
-  const parseNumber = (val) => {
-    if (!val) return 0;
-    if (typeof val === 'number') return val;
-    return Number(val.replace(/,/g, "")) || 0;
-  };
-
-  // 🔥 Handle click
-  const handleClick = (data) => {
-    if (!data?.activePayload) return;
-
-    const month = data.activePayload[0].payload.month;
-    setSelectedMonth(month);
-
-    // Filter daily data from the passed rawData prop
-    const raw = rawData.map((row) => ({
-      date: row.payment_date,
-      revenue: row.revenue,
-    }));
-
-    const filtered = raw
-      .filter((d) => {
-        const monthName = new Date(d.date).toLocaleString('default', { month: 'short' });
-        return monthName === month;
-      })
-      .map((d) => ({
-        day: new Date(d.date).getDate().toString(),
-        revenue: d.revenue,
-        fullDate: d.date
-      }));
-
-    setDailyData(filtered);
-    setViewMode("daily");
-  };
+export default function RevenueChart() {
+  const { monthlyData } = useDashboardData();
 
   return (
-    <div className="w-full h-full">
-      <div className="flex justify-between items-center mb-8">
+    <div className="bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-800/60 rounded-2xl p-8 shadow-sm h-[380px] group transition-all">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
-          <h2 className="text-xl font-bold text-slate-800">
-            {viewMode === "monthly"
-              ? "Revenue Trend"
-              : `${selectedMonth} - Daily Revenue`}
-          </h2>
-          <p className="text-sm text-slate-500 mt-1">
-            {viewMode === "monthly" ? "Click on a data point to see daily breakdown" : "Detailed daily view"}
-          </p>
+          <h3 className="text-xl font-black text-zinc-900 dark:text-zinc-50 tracking-tight">Revenue Trend</h3>
+          <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest mt-1">Monthly session actuals</p>
         </div>
-
-        {viewMode === "daily" && (
-          <button
-            onClick={() => setViewMode("monthly")}
-            className="flex items-center gap-1 text-sm font-semibold text-purple-600 bg-purple-50 hover:bg-purple-100 px-4 py-2 rounded-xl transition-colors"
-          >
-            <ChevronLeft size={16} /> Back to Monthly
-          </button>
-        )}
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.4)]" />
+            <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Actuals</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]" />
+            <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Projection</span>
+          </div>
+        </div>
       </div>
 
-      <div className="h-[350px] w-full">
+      <div className="h-[240px]">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart
-            data={viewMode === "monthly" ? monthlyData : dailyData}
-            onClick={viewMode === "monthly" ? handleClick : null}
-            margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
-          >
+          <AreaChart data={monthlyData} margin={{ left: -20, right: 0, top: 0, bottom: 0 }}>
             <defs>
-              <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.4} />
-                <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
-              </linearGradient>
-              <linearGradient id="colorLastRevenue" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.4} />
-                <stop offset="95%" stopColor="#f59e0b" stopOpacity={0} />
+              <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#6366f1" stopOpacity={0.2}/>
+                <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
               </linearGradient>
             </defs>
-            
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" opacity={0.5} />
-
+            <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#f1f5f9" />
             <XAxis 
-              dataKey={viewMode === "monthly" ? "month" : "day"} 
-              axisLine={false}
-              tickLine={false}
-              tick={{ fill: '#64748b', fontSize: 12, fontWeight: 500 }}
-              dy={15}
+              dataKey="month" 
+              axisLine={false} 
+              tickLine={false} 
+              tick={{ fontSize: 10, fontWeight: 700, fill: '#94a3b8' }} 
+              dy={10}
+            />
+            <YAxis 
+              axisLine={false} 
+              tickLine={false} 
+              tick={{ fontSize: 10, fontWeight: 700, fill: '#94a3b8' }} 
+              tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}k`}
             />
             <Tooltip 
-              contentStyle={{ 
-                borderRadius: '16px', 
-                border: '1px solid rgba(255,255,255,0.4)', 
-                boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)', 
-                background: 'rgba(255, 255, 255, 0.8)', 
-                backdropFilter: 'blur(12px)',
-                padding: '12px 16px'
-              }}
-              itemStyle={{ color: '#1e293b', fontWeight: 600 }}
-              labelStyle={{ color: '#64748b', marginBottom: '4px', fontSize: '13px' }}
-              formatter={(value, name) => {
-                if (name === 'lastRevenue') return [`₹${value.toLocaleString()}`, 'Last Session'];
-                if (name === 'projectedRevenue') return [`₹${value.toLocaleString()}`, 'Anticipated'];
-                return [`₹${value.toLocaleString()}`, 'Current Session'];
-              }}
-              labelFormatter={(label, payload) => {
-                if (viewMode === 'daily' && payload && payload.length > 0) {
-                  return payload[0].payload.fullDate || label;
-                }
-                return label;
-              }}
+              content={<CustomTooltip />}
+              cursor={{ stroke: '#6366f1', strokeWidth: 1, strokeDasharray: '4 4' }}
             />
-
-            {viewMode === "monthly" && (
-              <Area
-                type="monotone"
-                dataKey="lastRevenue"
-                name="lastRevenue"
-                stroke="#f59e0b"
-                strokeWidth={3}
-                strokeDasharray="5 5"
-                fill="url(#colorLastRevenue)"
-                activeDot={{ r: 5, strokeWidth: 3, stroke: '#fff', fill: '#f59e0b' }}
-                style={{ cursor: "pointer" }}
-              />
-            )}
-
-            <Area
-              type="monotone"
-              dataKey="revenue"
-              name="revenue"
-              stroke="#8b5cf6"
-              strokeWidth={4}
-              fill="url(#colorRevenue)"
-              activeDot={{ r: 6, strokeWidth: 4, stroke: '#fff', fill: '#8b5cf6', className: "shadow-lg" }}
-              style={viewMode === "monthly" ? { cursor: "pointer" } : {}}
+            <Area 
+              type="monotone" 
+              dataKey="revenue" 
+              stroke="#6366f1" 
+              strokeWidth={3} 
+              fill="url(#revenueGradient)" 
+              animationDuration={1500}
             />
-
-            {viewMode === "monthly" && (
-              <Area
-                type="monotone"
-                dataKey="projectedRevenue"
-                name="projectedRevenue"
-                stroke="#a855f7"
-                strokeWidth={2}
-                strokeDasharray="8 4"
-                fill="transparent"
-                activeDot={{ r: 4, strokeWidth: 2, stroke: '#fff', fill: '#a855f7' }}
-              />
-            )}
           </AreaChart>
         </ResponsiveContainer>
       </div>
     </div>
   );
+}
+
+function CustomTooltip({ active, payload, label }) {
+  if (active && payload && payload.length) {
+    const val = payload[0].value;
+    return (
+      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-4 rounded-xl shadow-2xl backdrop-blur-md">
+        <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1">{label}</p>
+        <p className="text-lg font-black text-zinc-900 dark:text-zinc-50 tracking-tight">₹{val.toLocaleString()}</p>
+        {payload[0].payload.projectedRevenue && (
+          <div className="mt-2 pt-2 border-t border-zinc-100 dark:border-zinc-800">
+            <p className="text-[9px] font-bold text-emerald-600 uppercase tracking-widest">Est. Projection</p>
+            <p className="font-bold text-zinc-900 dark:text-zinc-50">₹{payload[0].payload.projectedRevenue.toLocaleString()}</p>
+          </div>
+        )}
+      </div>
+    );
+  }
+  return null;
 }
