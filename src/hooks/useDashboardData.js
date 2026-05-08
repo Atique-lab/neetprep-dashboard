@@ -128,11 +128,13 @@ export function useDashboardData() {
     };
 
     const processed = processRows(filteredData);
+    const processedFullCurrent = processRows(rawData);
     const lastSessionRows = extraData?.lastSession || [];
     const lastSessionProcessedFull = processRows(lastSessionRows);
 
     // Filter Last Session data "Till Today" relative to session start
-    const currentSessionDates = processed.map(d => getAbsoluteDate(d.date)).filter(Boolean);
+    // We use rawData (unfiltered) to find the TRUE start of the current session
+    const currentSessionDates = processedFullCurrent.map(d => getAbsoluteDate(d.date)).filter(Boolean);
     const currentSessionStart = currentSessionDates.length > 0 ? new Date(Math.min(...currentSessionDates)) : new Date();
     const daysInCurrentSession = Math.ceil((new Date() - currentSessionStart) / (1000 * 60 * 60 * 24));
 
@@ -253,7 +255,7 @@ export function useDashboardData() {
       monthlyMap[month] += d.revenue;
     });
 
-    lastSessionProcessed.forEach((d) => {
+    lastSessionProcessedFull.forEach((d) => {
       const month = getMonth(d.date);
       if (!month) return;
       if (!lastMonthlyMap[month]) lastMonthlyMap[month] = 0;
