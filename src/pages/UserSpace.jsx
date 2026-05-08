@@ -94,7 +94,7 @@ export default function UserSpace() {
            <div>
               <h1 className="text-3xl font-black text-slate-800 dark:text-white tracking-tight">System Workflow</h1>
               <p className="text-slate-500 dark:text-slate-400 font-bold flex items-center gap-2 mt-1">
-                <span className="text-purple-600">{user?.name}</span> • {user?.title}
+                <span className="text-purple-600">{user?.name}</span> {user?.name === 'Atique' && `• ${user?.title}`}
               </p>
            </div>
         </div>
@@ -339,33 +339,35 @@ export default function UserSpace() {
             </div>
 
             {/* Presence Card */}
-            <div className="glass rounded-[2rem] p-6 space-y-4 bg-white/50 dark:bg-slate-800/50">
-               <h4 className="font-black text-slate-800 dark:text-white flex items-center gap-2 text-xs uppercase tracking-widest"><Users size={16} className="text-emerald-500" /> Live Team Presence</h4>
-               <div className="space-y-3">
-                  {userList.map(u => {
-                    const status = presence?.[u.name];
-                    return (
-                      <div key={u.name} className="flex items-center justify-between p-2 rounded-xl hover:bg-white dark:hover:bg-slate-700 transition-all">
-                        <div className="flex items-center gap-3">
-                           <div className="relative">
-                              <div className="w-8 h-8 rounded-lg bg-slate-200 dark:bg-slate-600 flex items-center justify-center text-[10px] font-black text-slate-500 uppercase">
-                                 {status?.avatar_url ? <img src={status.avatar_url} className="w-full h-full object-cover rounded-lg" /> : u.name.substring(0, 2)}
-                              </div>
-                              <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white dark:border-slate-800 ${status?.isOnline ? 'bg-emerald-500' : 'bg-slate-300'}`} />
-                           </div>
-                           <div>
-                              <p className="text-xs font-black text-slate-700 dark:text-slate-200">{u.name}</p>
-                              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">{u.title}</p>
-                           </div>
+            {user?.name === 'Atique' && (
+              <div className="glass rounded-[2rem] p-6 space-y-4 bg-white/50 dark:bg-slate-800/50">
+                 <h4 className="font-black text-slate-800 dark:text-white flex items-center gap-2 text-xs uppercase tracking-widest"><Users size={16} className="text-emerald-500" /> Live Team Presence</h4>
+                 <div className="space-y-3">
+                    {userList.map(u => {
+                      const status = presence?.[u.name];
+                      return (
+                        <div key={u.name} className="flex items-center justify-between p-2 rounded-xl hover:bg-white dark:hover:bg-slate-700 transition-all">
+                          <div className="flex items-center gap-3">
+                             <div className="relative">
+                                <div className="w-8 h-8 rounded-lg bg-slate-200 dark:bg-slate-600 flex items-center justify-center text-[10px] font-black text-slate-500 uppercase">
+                                   {status?.avatar_url ? <img src={status.avatar_url} className="w-full h-full object-cover rounded-lg" /> : u.name.substring(0, 2)}
+                                </div>
+                                <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white dark:border-slate-800 ${status?.isOnline ? 'bg-emerald-500' : 'bg-slate-300'}`} />
+                             </div>
+                             <div>
+                                <p className="text-xs font-black text-slate-700 dark:text-slate-200">{u.name}</p>
+                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">{u.title}</p>
+                             </div>
+                          </div>
+                          <div className="text-[9px] font-black text-slate-400 uppercase">
+                             {status?.isOnline ? 'Active' : status?.last_seen ? new Date(status.last_seen).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Offline'}
+                          </div>
                         </div>
-                        <div className="text-[9px] font-black text-slate-400 uppercase">
-                           {status?.isOnline ? 'Active' : status?.last_seen ? new Date(status.last_seen).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Offline'}
-                        </div>
-                      </div>
-                    );
-                  })}
-               </div>
-            </div>
+                      );
+                    })}
+                 </div>
+              </div>
+            )}
 
             {/* Suggestions */}
             <div className="glass rounded-[2rem] p-6 space-y-4 border-t-4 border-t-amber-400 bg-white/50 dark:bg-slate-800/50">
@@ -422,16 +424,18 @@ export default function UserSpace() {
              
              <div className="border-t border-slate-100 dark:border-slate-800 pt-10">
                 <h3 className="text-xl font-black text-slate-800 dark:text-white mb-6">Profile Details</h3>
-                <div className="grid grid-cols-2 gap-8">
-                   <div>
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Assigned Role</p>
-                      <p className="text-lg font-bold text-slate-800 dark:text-white">{user?.role}</p>
+                 {user?.name === 'Atique' && (
+                   <div className="grid grid-cols-2 gap-8">
+                      <div>
+                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Assigned Role</p>
+                         <p className="text-lg font-bold text-slate-800 dark:text-white">{user?.role}</p>
+                      </div>
+                      <div>
+                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Reports To</p>
+                         <p className="text-lg font-bold text-slate-800 dark:text-white">{user?.reportsTo}</p>
+                      </div>
                    </div>
-                   <div>
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Reports To</p>
-                      <p className="text-lg font-bold text-slate-800 dark:text-white">{user?.reportsTo}</p>
-                   </div>
-                </div>
+                 )}
              </div>
           </motion.div>
         )}
@@ -452,6 +456,7 @@ export default function UserSpace() {
 
 function TaskCard({ task, onToggle, onDelete, onUpdateNotes, urgent }) {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [isExpanded, setIsExpanded] = useState(false);
   const [noteText, setNoteText] = useState(task.notes || "");
   

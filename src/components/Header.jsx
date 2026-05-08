@@ -255,9 +255,11 @@ export default function Header({ onToggleMenu }) {
                   {user?.name}
                   <ExternalLink size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" />
                 </button>
-                <div className="flex items-center justify-center gap-1.5 text-[10px] font-black text-purple-600 bg-purple-100/50 px-2 py-0.5 rounded-full mt-1 w-fit mx-auto uppercase tracking-wider">
-                  <Shield size={10} /> {user?.role}
-                </div>
+                {user?.name === 'Atique' && (
+                  <div className="flex items-center justify-center gap-1.5 text-[10px] font-black text-purple-600 bg-purple-100/50 px-2 py-0.5 rounded-full mt-1 w-fit mx-auto uppercase tracking-wider">
+                    <Shield size={10} /> {user?.role}
+                  </div>
+                )}
               </div>
               <div className="p-4 space-y-1">
                 <button 
