@@ -148,16 +148,23 @@ export function useDashboardData() {
       return diff <= daysInCurrentSession;
     });
 
-    // Deduplicate last session by email (using filtered set)
-    const lastSessionEmailMap = {};
+    // TOTAL Last Session (Full Benchmark)
+    const lastSessionEmailMapFull = {};
+    lastSessionProcessedFull.forEach(d => {
+      const key = d.email || `__no_email_${Math.random()}`;
+      if (!lastSessionEmailMapFull[key]) lastSessionEmailMapFull[key] = d.revenue;
+    });
+    const lastSessionStudentsTotal = Object.keys(lastSessionEmailMapFull).length;
+    const lastSessionRevenueTotal = Object.values(lastSessionEmailMapFull).reduce((s, v) => s + v, 0);
+
+    // TILL TODAY Last Session (Relative Comparison)
+    const lastSessionEmailMapTillToday = {};
     lastSessionProcessed.forEach(d => {
       const key = d.email || `__no_email_${Math.random()}`;
-      if (!lastSessionEmailMap[key]) {
-        lastSessionEmailMap[key] = d.revenue;
-      }
+      if (!lastSessionEmailMapTillToday[key]) lastSessionEmailMapTillToday[key] = d.revenue;
     });
-    const lastSessionStudents = Object.keys(lastSessionEmailMap).length;
-    const totalLastSessionRevenue = Object.values(lastSessionEmailMap).reduce((s, v) => s + v, 0);
+    const lastSessionStudentsTillToday = Object.keys(lastSessionEmailMapTillToday).length;
+    const lastSessionRevenueTillToday = Object.values(lastSessionEmailMapTillToday).reduce((s, v) => s + v, 0);
 
     // ═══════════════════════════════════════════
     // BUILD LAST SESSION COMPARISON DATA
@@ -307,8 +314,8 @@ export function useDashboardData() {
     let sessionGrowth = 0;
     let monthlyGrowth = 0;
 
-    if (totalLastSessionRevenue > 0) {
-      sessionGrowth = ((totalRevenueAll - totalLastSessionRevenue) / totalLastSessionRevenue) * 100;
+    if (lastSessionRevenueTillToday > 0) {
+      sessionGrowth = ((totalRevenueAll - lastSessionRevenueTillToday) / lastSessionRevenueTillToday) * 100;
     }
     if (prevRevenue > 0) {
       monthlyGrowth = ((currentRevenue - prevRevenue) / prevRevenue) * 100;
@@ -317,15 +324,12 @@ export function useDashboardData() {
     // Deduplicate current session by email for fair enrolment growth comparison
     const currentUniqueEmails = new Set(processed.map(d => d.email).filter(Boolean));
     const currentUniqueCount = currentUniqueEmails.size || processed.length;
-    const enrolmentGrowth = lastSessionStudents > 0
-      ? (((currentUniqueCount - lastSessionStudents) / lastSessionStudents) * 100)
+    const enrolmentGrowth = lastSessionStudentsTillToday > 0
+      ? (((currentUniqueCount - lastSessionStudentsTillToday) / lastSessionStudentsTillToday) * 100)
       : 0;
 
-    // Revenue growth uses only months that exist in current session (fair YTD comparison)
-    const currentSessionMonths = monthsOrder.filter(m => monthlyMap[m] !== undefined);
-    const lastSessionYTDRevenue = currentSessionMonths.reduce((sum, m) => sum + (lastMonthlyMap[m] || 0), 0);
-    const revenueGrowthVsLastSession = lastSessionYTDRevenue > 0
-      ? (((totalRevenueAll - lastSessionYTDRevenue) / lastSessionYTDRevenue) * 100)
+    const revenueGrowthVsLastSession = lastSessionRevenueTillToday > 0
+      ? (((totalRevenueAll - lastSessionRevenueTillToday) / lastSessionRevenueTillToday) * 100)
       : 0;
 
     // Daily Comparison Logic (This Month vs Last Month)
@@ -481,11 +485,11 @@ export function useDashboardData() {
         lastMonthRev: lastMonthRevFull,
         monthlyGrowth,
         currentSessionRev: totalRevenueAll,
-        lastSessionRev: totalLastSessionRevenue,
+        lastSessionRev: lastSessionRevenueTotal,
         sessionGrowth,
         currentMonthName,
         prevMonthName,
-        lastSessionStudents,
+        lastSessionStudents: lastSessionStudentsTotal,
         enrolmentGrowth,
         revenueGrowthVsLastSession,
       },
