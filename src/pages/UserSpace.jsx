@@ -261,7 +261,9 @@ export default function UserSpace() {
                     >
                       <option value="">Select Manager...</option>
                       {userList.filter(u => u.name !== user?.name).map(u => (
-                        <option key={u.name} value={u.name}>{u.name} ({u.title})</option>
+                        <option key={u.name} value={u.name}>
+                          {u.name} {user?.name === 'Atique' ? `(${u.title})` : ''}
+                        </option>
                       ))}
                     </select>
                   </div>
