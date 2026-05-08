@@ -53,9 +53,9 @@ export default function UserSpace() {
   }, [centres]);
 
   // Workflow Categorization
-  const backlogTasks = tasks.filter(t => !t.completed && t.priority !== 'Urgent');
-  const urgentTasks = tasks.filter(t => !t.completed && t.priority === 'Urgent');
-  const completedTasks = tasks.filter(t => t.completed).slice(0, 5);
+  const backlogTasks = (tasks || []).filter(t => !t.completed && t.priority !== 'Urgent');
+  const urgentTasks = (tasks || []).filter(t => !t.completed && t.priority === 'Urgent');
+  const completedTasks = (tasks || []).filter(t => t.completed).slice(0, 5);
 
   const handleAdd = () => {
     if (!taskForm.text.trim()) return;

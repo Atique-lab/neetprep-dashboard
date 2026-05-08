@@ -23,8 +23,8 @@ export default function Audit() {
     );
   }
 
-  const highSeverity = reconciliation.filter(r => r.severity === 'high');
-  const mediumSeverity = reconciliation.filter(r => r.severity === 'medium');
+  const highSeverity = (reconciliation || []).filter(r => r.severity === 'high');
+  const mediumSeverity = (reconciliation || []).filter(r => r.severity === 'medium');
 
   return (
     <motion.div

@@ -12,7 +12,6 @@ export default function Sidebar() {
     { name: "Payments", path: "/payments", icon: <CreditCard size={20} /> },
     { name: "Students", path: "/students", icon: <GraduationCap size={20} /> },
     { name: "Audit", path: "/audit", icon: <ShieldCheck size={20} /> },
-    { name: "User Space", path: "/user-space", icon: <LayoutDashboard size={20} /> },
   ];
 
   return (

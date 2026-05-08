@@ -57,6 +57,7 @@ export function useDashboardData() {
     notifications: [],
     monthlyData: [],
     dailyComparison: [],
+    reconciliation: [],
     // Session comparison data for all pages
     lastSessionComparison: {
       managerMap: {},
