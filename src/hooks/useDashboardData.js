@@ -458,6 +458,7 @@ export function useDashboardData() {
       },
       notifications: notifs,
       monthlyData,
+      dailyComparison,
       lastSessionComparison,
       reconciliation: (() => {
         const issues = [];

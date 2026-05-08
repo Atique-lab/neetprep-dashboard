@@ -3,10 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { useGlobalData } from "../context/DashboardContext";
 import { useAuth } from "../context/AuthContext";
 import { useDashboardData } from "../hooks/useDashboardData";
-import { Bell, LogOut, CheckCheck, Calendar, User, Shield, ExternalLink, RefreshCw, Sun, Moon } from "lucide-react";
+import { Bell, LogOut, CheckCheck, Calendar, User, Shield, ExternalLink, RefreshCw, Sun, Moon, Menu } from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
 
-export default function Header() {
+export default function Header({ onToggleMenu }) {
   const navigate = useNavigate();
   const { dateRange, setDateRange, refreshData } = useGlobalData();
   const { user, logout } = useAuth();
@@ -105,8 +105,14 @@ export default function Header() {
 
   return (
     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-      {/* Left: Simplified Month Filter */}
-      <div className="flex items-center gap-4">
+      {/* Left: Mobile Menu + Simplified Month Filter */}
+      <div className="flex items-center gap-4 w-full md:w-auto">
+        <button 
+          onClick={onToggleMenu}
+          className="p-3 glass rounded-xl text-slate-600 dark:text-slate-300 lg:hidden"
+        >
+          <Menu size={20} />
+        </button>
         <div className="relative group">
           <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-purple-500 transition-colors">
             <Calendar size={16} />

@@ -156,7 +156,7 @@ export default function Dashboard() {
                 <Trophy size={15} className="text-amber-500" />
                 <p className="text-sm font-medium uppercase tracking-wider">Top Performing Centre</p>
               </div>
-              <h2 className="text-xl font-black text-emerald-600 dark:text-emerald-400 truncate" title={insights.topCentre}>
+              <h2 className="text-lg font-black text-emerald-600 dark:text-emerald-400 break-words" title={insights.topCentre}>
                 {insights.topCentre}
               </h2>
             </div>
@@ -165,7 +165,7 @@ export default function Dashboard() {
                 <UserCheck size={15} className="text-purple-500" />
                 <p className="text-sm font-medium uppercase tracking-wider">Top Manager</p>
               </div>
-              <h2 className="text-xl font-black text-purple-600 dark:text-purple-400 truncate" title={insights.topManager}>
+              <h2 className="text-lg font-black text-purple-600 dark:text-purple-400 break-words" title={insights.topManager}>
                 {insights.topManager}
               </h2>
             </div>
@@ -248,6 +248,9 @@ export default function Dashboard() {
           })()}
         </div>
       </div>
+      
+      {/* Spacer for FAB on mobile */}
+      <div className="h-20 lg:hidden" />
     </motion.div>
   );
 }
