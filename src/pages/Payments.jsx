@@ -40,10 +40,10 @@ export default function Payments() {
   const { pieData, methodData, lsPieData } = useMemo(() => {
     if (!filteredData || filteredData.length <= 1) return { pieData: [], methodData: [], lsPieData: [] };
 
-    const processed = filteredData.slice(1).map((row) => ({
-      paymentTo: row[13],
-      method: normalizePaymentMethod(row[8] || "Unknown"),
-      amount: parseNumber(row[11]),
+    const processed = filteredData.map((d) => ({
+      paymentTo: d.paid_to,
+      method: normalizePaymentMethod(d.payment_method || "Unknown"),
+      amount: d.revenue || 0,
     }));
 
     let neetprep = 0, centre = 0;
@@ -52,8 +52,8 @@ export default function Payments() {
     processed.forEach((d) => {
       if (d.paymentTo) {
         const v = d.paymentTo.toLowerCase();
-        if (v.includes("neetprep")) neetprep += d.amount || 0;
-        else if (v.includes("centre") || v.includes("center")) centre += d.amount || 0;
+        if (v.includes("neetprep")) neetprep += d.amount;
+        else if (v.includes("centre") || v.includes("center")) centre += d.amount;
       }
       const method = d.method;
       if (method) methodMap[method] = (methodMap[method] || 0) + d.amount;

@@ -4,14 +4,14 @@ import Header from "./Header";
 import CommandPalette from "./CommandPalette";
 import FloatingActions from "./FloatingActions";
 import { Outlet } from "react-router-dom";
-import { X } from "lucide-react";
+import { X, Menu } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
 export default function Layout() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
-    <div className="flex min-h-screen text-slate-800 dark:text-slate-100 font-sans relative">
+    <div className="flex min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-50 font-sans relative">
       <CommandPalette />
       <FloatingActions />
 
@@ -24,19 +24,19 @@ export default function Layout() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsMobileMenuOpen(false)}
-              className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] lg:hidden"
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] lg:hidden"
             />
             <motion.div 
               initial={{ x: "-100%" }}
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
-              transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="fixed top-0 left-0 bottom-0 w-72 p-4 z-[101] lg:hidden"
+              transition={{ type: "spring", damping: 30, stiffness: 300 }}
+              className="fixed top-0 left-0 bottom-0 w-64 z-[101] lg:hidden"
             >
-              <div className="h-full relative">
+              <div className="h-full relative shadow-2xl">
                 <button 
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="absolute top-8 right-6 p-2 text-slate-400 hover:text-slate-600 z-50 lg:hidden"
+                  className="absolute top-6 right-[-48px] p-2 bg-white dark:bg-zinc-900 rounded-lg shadow-xl text-zinc-600 z-50 lg:hidden"
                 >
                   <X size={20} />
                 </button>
@@ -47,19 +47,19 @@ export default function Layout() {
         )}
       </AnimatePresence>
 
-      {/* Sidebar Wrapper - Desktop */}
-      <div className="p-4 hidden lg:block w-72">
+      {/* Sidebar - Desktop */}
+      <div className="hidden lg:block w-64 fixed top-0 bottom-0 left-0 z-[50]">
         <Sidebar />
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col h-screen overflow-hidden">
-        <div className="flex-1 p-4 lg:p-6 lg:pl-0 overflow-y-auto">
+      <div className="flex-1 flex flex-col lg:pl-64 min-h-screen">
+        <main className="flex-1 w-full max-w-[1400px] mx-auto p-4 md:p-8 lg:p-12">
           <Header onToggleMenu={() => setIsMobileMenuOpen(true)} />
-          <div className="pb-10">
+          <div className="mt-8 pb-12">
             <Outlet />
           </div>
-        </div>
+        </main>
       </div>
     </div>
   );

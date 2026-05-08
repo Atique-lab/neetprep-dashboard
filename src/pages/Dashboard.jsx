@@ -9,31 +9,31 @@ import DailyComparisonChart from "../components/DailyComparisonChart";
 import { useDashboardData } from "../hooks/useDashboardData";
 import { generateRevenueReport } from "../utils/reportGenerator";
 
+import { KPISkeleton, ChartSkeleton } from "../components/Skeleton";
+
 export default function Dashboard() {
   const { kpi, insights, monthlyData, dailyComparison, rawData, loading, error } = useDashboardData();
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center h-[60vh] text-red-500 glass rounded-3xl m-2">
-        <AlertCircle size={64} className="mb-4 opacity-80" />
-        <h2 className="text-2xl font-semibold mb-2">Failed to load dashboard</h2>
-        <p className="text-red-400">{error}</p>
+      <div className="flex flex-col items-center justify-center h-[60vh] text-rose-500 bg-rose-50/50 dark:bg-rose-500/5 border border-rose-100 dark:border-rose-500/20 rounded-3xl m-2">
+        <AlertCircle size={48} className="mb-4 opacity-80" />
+        <h2 className="text-xl font-bold mb-1 tracking-tight">Sync failed</h2>
+        <p className="text-sm text-rose-400 font-medium">{error}</p>
       </div>
     );
   }
 
   if (loading) {
     return (
-      <div className="animate-pulse space-y-6">
-        <div>
-          <div className="h-8 bg-slate-200/50 rounded-lg w-1/4 mb-2"></div>
-          <div className="h-4 bg-slate-200/50 rounded-lg w-1/3 mb-8"></div>
+      <div className="space-y-8 animate-in fade-in duration-500">
+        <div className="space-y-2">
+          <div className="h-8 bg-zinc-200 dark:bg-zinc-800 rounded-lg w-1/4" />
+          <div className="h-4 bg-zinc-100 dark:bg-zinc-800/50 rounded-lg w-1/3" />
         </div>
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-6">
-          {[...Array(5)].map((_, i) => <div key={i} className="glass rounded-[2rem] h-40 w-full"></div>)}
-        </div>
-        <div className="glass rounded-[2rem] h-96 w-full"></div>
-        <div className="glass rounded-[2rem] h-96 w-full"></div>
+        <KPISkeleton />
+        <div className="h-[350px] bg-zinc-100 dark:bg-zinc-900 rounded-3xl" />
+        <KPISkeleton />
       </div>
     );
   }
@@ -99,10 +99,10 @@ export default function Dashboard() {
       </div>
 
       {/* ── Charts ── */}
-      <div className="glass p-6 md:p-8 rounded-[2rem] transition-all hover:shadow-lg hover:shadow-purple-500/5">
+      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-6 md:p-8 rounded-3xl transition-all hover:shadow-xl hover:shadow-indigo-500/5">
         <RevenueChart monthlyData={monthlyData} rawData={rawData} />
       </div>
-      <div className="glass p-6 md:p-8 rounded-[2rem] transition-all hover:shadow-lg hover:shadow-purple-500/5">
+      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-6 md:p-8 rounded-3xl transition-all hover:shadow-xl hover:shadow-indigo-500/5">
         <DailyComparisonChart
           dailyData={dailyComparison}
           currentMonthName={kpi.currentMonthName || "This Month"}
@@ -148,24 +148,24 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 
         {/* Top Performers Card */}
-        <div className="glass p-6 md:p-8 rounded-[2rem] relative overflow-hidden group hover:-translate-y-1 transition-transform duration-300 md:col-span-1">
+        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-6 md:p-8 rounded-3xl relative overflow-hidden group hover:-translate-y-1 transition-transform duration-300 md:col-span-1 shadow-sm">
           <div className="absolute -right-6 -top-6 w-32 h-32 bg-green-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
           <div className="space-y-5 relative z-10">
             <div>
-              <div className="flex items-center gap-2 mb-1 text-slate-500 dark:text-slate-400">
+              <div className="flex items-center gap-2 mb-1 text-zinc-500">
                 <Trophy size={15} className="text-amber-500" />
-                <p className="text-sm font-medium uppercase tracking-wider">Top Performing Centre</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em]">Top Performing Centre</p>
               </div>
               <h2 className="text-lg font-black text-emerald-600 dark:text-emerald-400 break-words" title={insights.topCentre}>
                 {insights.topCentre}
               </h2>
             </div>
-            <div className="border-t border-slate-100 dark:border-slate-800 pt-4">
-              <div className="flex items-center gap-2 mb-1 text-slate-500 dark:text-slate-400">
-                <UserCheck size={15} className="text-purple-500" />
-                <p className="text-sm font-medium uppercase tracking-wider">Top Manager</p>
+            <div className="border-t border-zinc-100 dark:border-zinc-800 pt-4">
+              <div className="flex items-center gap-2 mb-1 text-zinc-500">
+                <UserCheck size={15} className="text-indigo-500" />
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em]">Top Manager</p>
               </div>
-              <h2 className="text-lg font-black text-purple-600 dark:text-purple-400 break-words" title={insights.topManager}>
+              <h2 className="text-lg font-black text-indigo-600 dark:text-indigo-400 break-words" title={insights.topManager}>
                 {insights.topManager}
               </h2>
             </div>

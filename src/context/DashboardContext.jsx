@@ -1,101 +1,90 @@
-import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
-import { fetchSheetData, fetchNewCentreShare, fetchLastSessionEnrolments } from '../services/sheetApi';
+import React, { createContext, useContext, useState, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '../lib/supabase';
 
 const DashboardContext = createContext();
 
 export function DashboardProvider({ children }) {
-  const [rawData, setRawData] = useState([]);
-  const [extraData, setExtraData] = useState({ newCentreShare: [], lastSession: [] });
-  const [loading, setLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [error, setError] = useState(null);
   const [dateRange, setDateRange] = useState("all");
-  const [lastSynced, setLastSynced] = useState(null);
 
-  const loadData = useCallback(async (isManualRefresh = false) => {
-    try {
-      if (isManualRefresh) {
-        setIsRefreshing(true);
-      } else {
-        setLoading(true);
-      }
-      const [rows, newCentreShare, lastSession] = await Promise.all([
-        fetchSheetData(),
-        fetchNewCentreShare(),
-        fetchLastSessionEnrolments()
-      ]);
-      setRawData(rows);
-      setExtraData({ newCentreShare, lastSession });
-      setLastSynced(new Date());
-    } catch (err) {
-      console.error("Error fetching sheet data:", err);
-      setError(err.message || "Failed to load dashboard data");
-    } finally {
-      setLoading(false);
-      setIsRefreshing(false);
+  // 1. Fetch Core Revenue Data
+  const { 
+    data: rawPayments = [], 
+    isLoading: loading, 
+    error, 
+    refetch: refreshData,
+    isRefetching: isRefreshing 
+  } = useQuery({
+    queryKey: ['payments'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('payments')
+        .select('*')
+        .order('payment_date', { ascending: false });
+
+      if (error) throw error;
+      return data;
     }
-  }, []);
+  });
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+  // 2. Fetch Comparison Stats (from the view)
+  const { data: stats } = useQuery({
+    queryKey: ['session_comparison'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('session_comparison')
+        .single();
+      
+      if (error) throw error;
+      return data;
+    }
+  });
 
+  // 3. Filtered Data (Mainly for Manager Role-based access)
   const filteredData = useMemo(() => {
-    if (rawData.length <= 1) return rawData;
+    if (!rawPayments) return [];
 
-    const userStr = localStorage.getItem('auth_user');
+    const userStr = sessionStorage.getItem('auth_user');
     const user = userStr ? JSON.parse(userStr) : null;
     
-    // 1. Role-based filtering
-    let roleFilteredData = rawData.slice(1);
+    let filtered = rawPayments;
+
+    // Role-based filtering
     if (user && user.role === 'manager') {
-      roleFilteredData = roleFilteredData.filter(row => {
-        // Assuming "Centre Manager" is at index 22 based on the raw data log
-        const managerName = row[22] ? row[22].trim() : '';
-        return managerName.toLowerCase() === user.name.toLowerCase();
+      filtered = filtered.filter(row => 
+        row.manager_name?.toLowerCase() === user.name.toLowerCase()
+      );
+    }
+
+    // Date range filtering
+    if (dateRange !== "all") {
+      filtered = filtered.filter(row => {
+        const monthMap = {
+          Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5,
+          Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11
+        };
+        const rowMonth = new Date(row.payment_date).getMonth();
+        return rowMonth === monthMap[dateRange];
       });
     }
 
-    if (dateRange === "all") return [rawData[0], ...roleFilteredData];
+    return filtered;
+  }, [rawPayments, dateRange]);
 
-    const header = rawData[0];
-    
-    // Find the "latest" date in the dataset to act as "Today"
-    let latestDate = new Date("1-Jan 2000");
-    roleFilteredData.forEach(row => {
-      if (row[1]) {
-        const d = new Date(`${row[1]} 2026`);
-        if (!isNaN(d) && d > latestDate) latestDate = d;
-      }
-    });
-
-    const filtered = roleFilteredData.filter(row => {
-      if (!row[1]) return false;
-      const rowDate = new Date(`${row[1]} 2026`);
-      if (isNaN(rowDate)) return true;
-
-      const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-      if (months.includes(dateRange)) {
-        return getMonth(row[1]) === dateRange;
-      }
-      return true;
-    });
-
-    return [header, ...filtered];
-  }, [rawData, dateRange]);
+  const lastSynced = rawPayments.length > 0 ? rawPayments[0].last_synced_at : null;
 
   return (
     <DashboardContext.Provider value={{
-      rawData,
+      rawData: rawPayments,
       filteredData,
-      extraData,
+      stats,
       loading,
       isRefreshing,
-      error,
+      error: error?.message,
       dateRange,
       setDateRange,
       lastSynced,
-      refreshData: () => loadData(true)
+      refreshData
     }}>
       {children}
     </DashboardContext.Provider>

@@ -29,13 +29,13 @@ export default function Revenue() {
   };
 
   const data = useMemo(() => {
-    if (!filteredData || filteredData.length <= 1) return { neetprep: 0, centre: 0, gst: 0, total: 0 };
+    if (!filteredData || filteredData.length === 0) return { neetprep: 0, centre: 0, gst: 0, total: 0 };
 
     let totalCentre = 0, totalNeetprep = 0, totalGst = 0;
-    filteredData.slice(1).forEach(row => {
-      totalCentre   += parseNumber(row[17]);
-      totalNeetprep += parseNumber(row[20]);
-      totalGst      += parseNumber(row[14]);
+    filteredData.forEach(d => {
+      totalCentre   += d.centre_share || 0;
+      totalNeetprep += d.neetprep_share || 0;
+      totalGst      += d.gst || 0;
     });
 
     return { neetprep: totalNeetprep, centre: totalCentre, gst: totalGst, total: totalCentre + totalNeetprep };

@@ -36,23 +36,16 @@ export default function Managers() {
   };
 
   const { managers, kpi } = useMemo(() => {
-    if (!filteredData || filteredData.length <= 1) return { managers: [], kpi: {} };
-
-    const processed = filteredData.slice(1).map((row) => ({
-      manager: row[21] || "Unassigned",
-      revenue: parseNumber(row[20]),
-      students: 1,
-      centre: row[6] || "Unknown",
-    })).filter(row => row.manager !== "Unassigned");
+    if (!filteredData || filteredData.length === 0) return { managers: [], kpi: {} };
 
     const managerMap = {};
-    processed.forEach((d) => {
-      const name = d.manager.trim();
-      if (!name) return;
+    filteredData.forEach((d) => {
+      const name = d.manager_name?.trim() || "Unassigned";
+      if (!name || name === "Unassigned") return;
       if (!managerMap[name]) managerMap[name] = { name, revenue: 0, students: 0, centresSet: new Set() };
-      managerMap[name].revenue += d.revenue;
+      managerMap[name].revenue += d.neetprep_share || 0;
       managerMap[name].students += 1;
-      managerMap[name].centresSet.add(d.centre);
+      managerMap[name].centresSet.add(d.centre_name || "Unknown");
     });
 
     const managerData = Object.values(managerMap).map(m => ({

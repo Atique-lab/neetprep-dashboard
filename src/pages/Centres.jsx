@@ -35,21 +35,13 @@ export default function Centres() {
   }, [newCentreShare]);
 
   const { centres, kpi } = useMemo(() => {
-    if (!filteredData || filteredData.length <= 1) return { centres: [], kpi: {} };
-
-    const processed = filteredData.slice(1).map((row) => ({
-      centre: row[6] || "Unknown",
-      revenue: parseNumber(row[11]),
-      internalExternal: row[12],
-      centreShare: parseNumber(row[17]),
-      neetprepShare: parseNumber(row[20]),
-    })).filter(row => row.centre !== "Unknown");
+    if (!filteredData || filteredData.length === 0) return { centres: [], kpi: {} };
 
     const centreMap = {};
 
-    processed.forEach((d) => {
-      const name = d.centre.trim();
-      if (!name) return;
+    filteredData.forEach((d) => {
+      const name = d.centre_name?.trim() || "Unknown";
+      if (!name || name === "Unknown") return;
 
       if (!centreMap[name]) {
         centreMap[name] = {
@@ -63,14 +55,14 @@ export default function Centres() {
         };
       }
 
-      centreMap[name].revenue += d.revenue;
+      centreMap[name].revenue += d.revenue || 0;
       centreMap[name].students += 1;
-      centreMap[name].neetprepShare += d.neetprepShare;
-      centreMap[name].centreShare += d.centreShare;
+      centreMap[name].neetprepShare += d.neetprep_share || 0;
+      centreMap[name].centreShare += d.centre_share || 0;
 
-      if (d.internalExternal?.toLowerCase()?.includes("internal")) {
+      if (d.type?.toLowerCase()?.includes("internal")) {
         centreMap[name].internal += 1;
-      } else if (d.internalExternal?.toLowerCase()?.includes("external")) {
+      } else if (d.type?.toLowerCase()?.includes("external")) {
         centreMap[name].external += 1;
       }
     });

@@ -28,15 +28,18 @@ export default function RevenueChart({ monthlyData, rawData }) {
     setSelectedMonth(month);
 
     // Filter daily data from the passed rawData prop
-    const raw = rawData.slice(1).map((row) => ({
-      date: row[1],
-      revenue: parseNumber(row[11]),
+    const raw = rawData.map((row) => ({
+      date: row.payment_date,
+      revenue: row.revenue,
     }));
 
     const filtered = raw
-      .filter((d) => d.date?.includes(month))
+      .filter((d) => {
+        const monthName = new Date(d.date).toLocaleString('default', { month: 'short' });
+        return monthName === month;
+      })
       .map((d) => ({
-        day: d.date.split(" ")[0], // Simplify date for X axis
+        day: new Date(d.date).getDate().toString(),
         revenue: d.revenue,
         fullDate: d.date
       }));
