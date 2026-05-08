@@ -33,8 +33,8 @@ export default function Audit() {
       className="space-y-8"
     >
       <div>
-        <h1 className="text-3xl font-bold text-slate-800 tracking-tight">Financial Audit & Reconciliation</h1>
-        <p className="text-slate-500 text-sm mt-1">Automated detection of data discrepancies and financial anomalies.</p>
+        <h1 className="text-3xl font-bold text-slate-800 dark:text-white tracking-tight">Financial Audit & Reconciliation</h1>
+        <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Automated detection of data discrepancies and financial anomalies.</p>
       </div>
 
       {/* Summary Cards */}
@@ -46,8 +46,8 @@ export default function Audit() {
             </div>
             <span className="text-2xl font-black text-rose-600">{highSeverity.length}</span>
           </div>
-          <h3 className="font-bold text-slate-800">Critical Issues</h3>
-          <p className="text-xs text-slate-400 mt-1">Requires immediate correction</p>
+          <h3 className="font-bold text-slate-800 dark:text-slate-100">Critical Issues</h3>
+          <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Requires immediate correction</p>
         </div>
 
         <div className="glass p-6 rounded-[2rem] border-t-4 border-t-amber-500">
@@ -57,8 +57,8 @@ export default function Audit() {
             </div>
             <span className="text-2xl font-black text-amber-600">{mediumSeverity.length}</span>
           </div>
-          <h3 className="font-bold text-slate-800">Warnings</h3>
-          <p className="text-xs text-slate-400 mt-1">Possible data entry errors</p>
+          <h3 className="font-bold text-slate-800 dark:text-slate-100">Warnings</h3>
+          <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Possible data entry errors</p>
         </div>
 
         <div className="glass p-6 rounded-[2rem] border-t-4 border-t-emerald-500">
@@ -70,15 +70,15 @@ export default function Audit() {
               {reconciliation.length === 0 ? '100%' : 'N/A'}
             </span>
           </div>
-          <h3 className="font-bold text-slate-800">Data Integrity</h3>
-          <p className="text-xs text-slate-400 mt-1">Overall system health status</p>
+          <h3 className="font-bold text-slate-800 dark:text-slate-100">Data Integrity</h3>
+          <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Overall system health status</p>
         </div>
       </div>
 
       {/* Main Issue List */}
       <div className="glass rounded-[2.5rem] overflow-hidden border border-white/50">
-        <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/30">
-          <h2 className="text-xl font-bold text-slate-800">Anomaly Detection Feed</h2>
+        <div className="p-8 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/30 dark:bg-slate-900/30">
+          <h2 className="text-xl font-bold text-slate-800 dark:text-white">Anomaly Detection Feed</h2>
           <div className="flex items-center gap-2">
             <span className="px-3 py-1 bg-white border border-slate-200 rounded-lg text-[10px] font-black text-slate-500 uppercase">
               {reconciliation.length} Total Found
@@ -138,8 +138,8 @@ export default function Audit() {
               <div className="w-20 h-20 bg-emerald-50 text-emerald-500 rounded-[2rem] flex items-center justify-center mx-auto mb-6 shadow-xl shadow-emerald-500/10">
                 <CheckCircle2 size={40} />
               </div>
-              <h3 className="text-2xl font-black text-slate-800">All Clear!</h3>
-              <p className="text-slate-400 max-w-sm mx-auto mt-2 font-medium">
+              <h3 className="text-2xl font-black text-slate-800 dark:text-white">All Clear!</h3>
+              <p className="text-slate-400 dark:text-slate-500 max-w-sm mx-auto mt-2 font-medium">
                 Our reconciliation engine found 0 discrepancies in the current dataset. Your records are healthy.
               </p>
             </div>

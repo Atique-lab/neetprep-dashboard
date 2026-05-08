@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   CheckSquare, X, Plus, Trash2, Lightbulb, CheckCheck, 
@@ -343,5 +343,3 @@ function TaskCard({ task, onToggle, onDelete, urgent }) {
     </motion.div>
   );
 }
-
-import { useNavigate } from "react-router-dom";
