@@ -462,6 +462,7 @@ function TaskCard({ task, onToggle, onDelete, onUpdateNotes, urgent }) {
   const getPriorityStyle = (p) => {
     if (isOverdue) return "bg-rose-600 text-white border-rose-700 animate-pulse";
     if (isDueSoon) return "bg-amber-500 text-white border-amber-600";
+    switch (p) {
       case "Urgent": return "bg-rose-500 text-white border-rose-600 shadow-lg shadow-rose-200 dark:shadow-none";
       case "High": return "bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-500/20 dark:text-orange-400 dark:border-orange-500/30";
       case "Medium": return "bg-indigo-100 text-indigo-700 border-indigo-200 dark:bg-indigo-500/20 dark:text-indigo-400 dark:border-indigo-500/30";
