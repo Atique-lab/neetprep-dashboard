@@ -14,17 +14,17 @@ export default function Students() {
   };
 
   const students = useMemo(() => {
-    if (!filteredData || filteredData.length === 0) return [];
+    if (!filteredData || filteredData.length <= 1) return [];
 
-    return filteredData.map((d) => ({
-      date: d.payment_date || "-",
-      name: d.student_name || "Unknown",
-      phone: d.phone || "-",
-      email: d.email || "-",
-      amount: d.revenue || 0,
-      centre: d.centre_name || "-",
-      course: d.course || "-",
-      intExt: d.type || "-",
+    return filteredData.slice(1).map((row) => ({
+      date: row[1] || "-",
+      name: row[2] || "Unknown",
+      phone: row[3] || "-",
+      email: row[4] || "-",
+      amount: parseNumber(row[11]),
+      centre: row[6] || "-",
+      course: row[7] || "-",
+      intExt: row[12] || "-",
     })).filter(row => row.name !== "Unknown");
   }, [filteredData]);
 

@@ -26,9 +26,9 @@ export default function ManagerDetail() {
   const monthsOrder = ["Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan", "Feb"];
 
   const managerData = useMemo(() => {
-    if (!filteredData || filteredData.length === 0) return null;
+    if (!filteredData || filteredData.length <= 1) return null;
 
-    const rows = filteredData.filter(d => d.manager_name?.trim() === decodedName);
+    const rows = filteredData.slice(1).filter(row => row[21]?.trim() === decodedName);
     if (rows.length === 0) return { notFound: true };
 
     let totalRevenue = 0;
@@ -36,20 +36,20 @@ export default function ManagerDetail() {
     const studentsList = [];
     const monthlyMap = {};
 
-    rows.forEach(d => {
-      const rev = d.neetprep_share || 0;
+    rows.forEach(row => {
+      const rev = parseNumber(row[20]);
       totalRevenue += rev;
 
-      const centreName = d.centre_name || "Unknown";
+      const centreName = row[6] || "Unknown";
       centresSet.add(centreName);
 
-      const month = getMonth(d.payment_date);
+      const month = getMonth(row[1]);
       if (month) monthlyMap[month] = (monthlyMap[month] || 0) + rev;
 
       studentsList.push({
-        date: d.payment_date || "-",
-        name: d.student_name || "Unknown",
-        course: d.course || "-",
+        date: row[1] || "-",
+        name: row[2] || "Unknown",
+        course: row[7] || "-",
         centre: centreName,
         amount: rev,
       });

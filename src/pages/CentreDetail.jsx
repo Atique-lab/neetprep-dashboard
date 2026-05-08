@@ -18,9 +18,9 @@ export default function CentreDetail() {
   };
 
   const centreData = useMemo(() => {
-    if (!filteredData || filteredData.length === 0) return null;
+    if (!filteredData || filteredData.length <= 1) return null;
 
-    const rows = filteredData.filter(d => d.centre_name?.trim() === decodedName);
+    const rows = filteredData.slice(1).filter(row => row[6]?.trim() === decodedName);
     
     // Find share and last session data
     let extCentreShare = 0;
@@ -68,12 +68,12 @@ export default function CentreDetail() {
     const studentsList = [];
     const dailyDataMap = {};
 
-    rows.forEach(d => {
-      const gross = d.revenue || 0;
-      const nShare = d.neetprep_share || 0;
-      const cShare = d.centre_share || 0;
-      const intExt = d.type || "";
-      const dateStr = d.payment_date;
+    rows.forEach(row => {
+      const gross = parseNumber(row[11]);
+      const nShare = parseNumber(row[20]);
+      const cShare = parseNumber(row[17]);
+      const intExt = row[12] || "";
+      const dateStr = row[1];
 
       totalGross += gross;
       neetprepShare += nShare;
@@ -84,10 +84,10 @@ export default function CentreDetail() {
 
       studentsList.push({
         date: dateStr || "-",
-        name: d.student_name || "Unknown",
-        course: d.course || "-",
+        name: row[2] || "Unknown",
+        course: row[7] || "-",
         amount: gross,
-        manager: d.manager_name || "Unassigned"
+        manager: row[21] || "Unassigned"
       });
 
       if (dateStr && gross > 0) {
