@@ -9,13 +9,16 @@ import { useTheme } from "../context/ThemeContext";
 export default function Header({ onToggleMenu }) {
   const navigate = useNavigate();
   const { dateRange, setDateRange, refreshData } = useGlobalData();
-  const { user, logout } = useAuth();
+  const { user, logout, profileImage } = useAuth();
   const { isDarkMode, toggleTheme } = useTheme();
   const { notifications } = useDashboardData();
   const [showNotifs, setShowNotifs] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [readCount, setReadCount] = useState(0);
+  const [readIds, setReadIds] = useState(() => {
+    const saved = localStorage.getItem('read_notifications');
+    return saved ? JSON.parse(saved) : [];
+  });
   const popupRef = useRef(null);
   const profileRef = useRef(null);
 
@@ -53,8 +56,11 @@ export default function Header({ onToggleMenu }) {
     setShowProfile(false);
     const next = !showNotifs;
     setShowNotifs(next);
-    if (next) {
-      setReadCount(notifications?.length || 0);
+    if (next && notifications?.length > 0) {
+      const allIds = notifications.map(n => n.id).filter(Boolean);
+      const newReadIds = Array.from(new Set([...readIds, ...allIds]));
+      setReadIds(newReadIds);
+      localStorage.setItem('read_notifications', JSON.stringify(newReadIds));
     }
   };
 
@@ -80,7 +86,7 @@ export default function Header({ onToggleMenu }) {
     navigate("/user-space", { state: { tab } });
   };
 
-  const unreadCount = Math.max(0, (notifications?.length || 0) - readCount);
+  const unreadCount = notifications?.filter(n => !readIds.includes(n.id)).length || 0;
 
   const getInitials = (name) => {
     if (!name) return "NP";
@@ -225,14 +231,22 @@ export default function Header({ onToggleMenu }) {
             className="h-10 w-10 rounded-full bg-gradient-to-tr from-purple-600 to-blue-500 flex items-center justify-center text-white font-bold shadow-md hover:shadow-lg hover:scale-105 transition-all cursor-pointer border-2 border-white"
             onClick={handleAvatarClick}
           >
-            {getInitials(user?.name)}
+            {profileImage ? (
+              <img src={profileImage} alt="Profile" className="w-full h-full object-cover rounded-full" />
+            ) : (
+              getInitials(user?.name)
+            )}
           </div>
 
           {showProfile && (
             <div className="absolute top-14 right-0 w-72 bg-white/95 backdrop-blur-2xl border border-purple-100/60 rounded-2xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
               <div className="p-6 text-center bg-gradient-to-br from-purple-50 to-indigo-50 border-b border-slate-100">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-purple-600 to-blue-500 flex items-center justify-center text-white text-2xl font-bold shadow-xl mx-auto mb-3">
-                  {getInitials(user?.name)}
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-purple-600 to-blue-500 flex items-center justify-center text-white text-2xl font-bold shadow-xl mx-auto mb-3 overflow-hidden">
+                  {profileImage ? (
+                    <img src={profileImage} alt="Profile" className="w-full h-full object-cover" />
+                  ) : (
+                    getInitials(user?.name)
+                  )}
                 </div>
                 <button 
                   onClick={() => goToUserSpace("profile")}

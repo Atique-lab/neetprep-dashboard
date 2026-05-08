@@ -224,12 +224,31 @@ export function useTaskStore(currentPath) {
 
   const pendingCount = tasks.filter(t => !t.completed).length;
 
+  const updateTaskNotes = useCallback(async (id, notes) => {
+    // Optimistic update
+    setTasks(prev => prev.map(t => t.id === id ? { ...t, notes } : t));
+
+    try {
+      const { error } = await supabase
+        .from('tasks')
+        .update({ notes })
+        .eq('id', id);
+
+      if (error) throw error;
+    } catch (err) {
+      console.error("Error updating task notes:", err);
+      // fetch to sync back
+      fetchTasks(false);
+    }
+  }, [fetchTasks]);
+
   return { 
     tasks, 
     addTask, 
     sendTaskToUser, 
     toggleTask, 
     deleteTask, 
+    updateTaskNotes,
     clearCompleted, 
     suggestions: unusedSuggestions, 
     pendingCount,

@@ -7,8 +7,9 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "rec
 export default function CentreDetail() {
   const { id } = useParams();
   const decodedName = decodeURIComponent(id);
-  const { filteredData, extraData, loading, error } = useDashboardData();
-  const { newCentreShare, lastSession } = extraData || {};
+  const { filteredData, extraData, lastSessionComparison, loading, error } = useDashboardData();
+  const { newCentreShare } = extraData || {};
+  const lsCentreMap = lastSessionComparison?.centreMap || {};
 
   const parseNumber = (val) => {
     if (!val) return 0;
@@ -39,13 +40,10 @@ export default function CentreDetail() {
       }
     }
 
-    let lastYearStudents = 0;
-    if (lastSession) {
-      const lastRow = lastSession.find(r => r[0]?.trim() === decodedName);
-      if (lastRow) {
-        lastYearStudents = parseInt(lastRow[4], 10) || 0;
-      }
-    }
+    const lsData = lsCentreMap[decodedName] || {};
+    const lastYearStudents = lsData.students || 0;
+    const lastYearRevenue = lsData.revenue || 0;
+    const lastYearNeetprep = lsData.neetprep || 0;
 
     if (rows.length === 0) {
       // Allow viewing centre even if it has no current rows but has share/last session data
@@ -107,6 +105,7 @@ export default function CentreDetail() {
 
     const studentsCount = studentsList.length;
     const studentGrowth = lastYearStudents > 0 ? ((studentsCount - lastYearStudents) / lastYearStudents) * 100 : 0;
+    const revenueGrowth = lastYearRevenue > 0 ? ((totalGross - lastYearRevenue) / lastYearRevenue) * 100 : 0;
 
     // Fallback if manager isn't in the newCentreShare sheet
     if (assignedManager === "Unassigned" && studentsList.length > 0) {
@@ -129,7 +128,10 @@ export default function CentreDetail() {
       intNeetprepShare,
       assignedManager,
       lastYearStudents,
-      studentGrowth
+      lastYearRevenue,
+      lastYearNeetprep,
+      studentGrowth,
+      revenueGrowth
     };
   }, [filteredData, extraData, decodedName]);
 
@@ -192,6 +194,11 @@ export default function CentreDetail() {
         <div className="glass p-6 rounded-[2rem] hover:-translate-y-1 transition-transform duration-300">
           <p className="text-slate-500 text-sm font-medium mb-2 flex items-center gap-2"><CreditCard size={14} /> Gross Revenue</p>
           <h2 className="text-3xl font-bold text-slate-800">₹{centreData.totalGross.toLocaleString()}</h2>
+          {centreData.lastYearRevenue > 0 && (
+            <p className="text-xs text-slate-400 mt-1">
+               Last year: <span className="font-bold">₹{centreData.lastYearRevenue.toLocaleString()}</span> | <span className={centreData.revenueGrowth > 0 ? "text-green-500" : "text-rose-500"}>{centreData.revenueGrowth > 0 ? '+' : ''}{centreData.revenueGrowth.toFixed(1)}%</span>
+            </p>
+          )}
         </div>
         <div className="glass p-6 rounded-[2rem] hover:-translate-y-1 transition-transform duration-300">
           <p className="text-purple-500 text-sm font-medium mb-2 flex items-center gap-2"><Wallet size={14} /> Neetprep Share</p>

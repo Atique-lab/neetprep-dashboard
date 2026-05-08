@@ -111,23 +111,111 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const login = (username, password) => {
+  const [presence, setPresence] = useState({});
+
+  // Presence Tracking
+  useEffect(() => {
+    if (!user) return;
+
+    const updatePresence = async () => {
+      try {
+        await supabase
+          .from('user_profiles')
+          .upsert({ 
+            username: user.name, 
+            last_seen: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'username' });
+      } catch (err) {}
+    };
+
+    const fetchPresence = async () => {
+      try {
+        const { data } = await supabase
+          .from('user_profiles')
+          .select('username, last_seen, avatar_url');
+        
+        const presenceMap = {};
+        data?.forEach(p => {
+          const isOnline = new Date() - new Date(p.last_seen) < 300000; // 5 mins
+          presenceMap[p.username] = { ...p, isOnline };
+        });
+        setPresence(presenceMap);
+      } catch (err) {}
+    };
+
+    updatePresence();
+    fetchPresence();
+    const interval = setInterval(() => {
+      updatePresence();
+      fetchPresence();
+    }, 60000);
+
+    return () => clearInterval(interval);
+  }, [user]);
+
+  const changePassword = async (newPassword) => {
+    if (user) {
+      try {
+        const { error } = await supabase
+          .from('user_profiles')
+          .upsert({ 
+            username: user.name, 
+            password: newPassword,
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'username' });
+        
+        if (error) throw error;
+        return { success: true };
+      } catch (err) {
+        console.error("Error changing password:", err);
+        return { success: false, error: err.message };
+      }
+    }
+    return { success: false, error: "No user logged in" };
+  };
+
+  const login = async (username, password) => {
     const key = username.toLowerCase().trim();
     const cred = USER_CREDENTIALS[key];
 
-    if (cred && password === cred.password) {
-      const loggedInUser = { 
-        role: cred.role, 
-        name: cred.name, 
-        username: cred.name,
-        title: cred.title,
-        reportsTo: cred.reportsTo,
-        desc: cred.desc
-      };
-      setUser(loggedInUser);
-      sessionStorage.setItem('auth_user', JSON.stringify(loggedInUser));
-      return { success: true };
-    }
+    try {
+      // Check DB first
+      const { data: dbUser } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('username', cred?.name || username)
+        .maybeSingle();
+
+      if (dbUser && dbUser.password === password) {
+        const loggedInUser = { 
+          role: cred?.role || 'manager', 
+          name: dbUser.username, 
+          username: dbUser.username,
+          title: cred?.title || 'Team Member',
+          reportsTo: cred?.reportsTo || 'Admin',
+          desc: cred?.desc || ''
+        };
+        setUser(loggedInUser);
+        sessionStorage.setItem('auth_user', JSON.stringify(loggedInUser));
+        return { success: true };
+      }
+
+      // Fallback to hardcoded
+      if (cred && password === cred.password) {
+        const loggedInUser = { 
+          role: cred.role, 
+          name: cred.name, 
+          username: cred.name,
+          title: cred.title,
+          reportsTo: cred.reportsTo,
+          desc: cred.desc
+        };
+        setUser(loggedInUser);
+        sessionStorage.setItem('auth_user', JSON.stringify(loggedInUser));
+        return { success: true };
+      }
+    } catch (err) {}
 
     return { success: false, error: 'Invalid username or password' };
   };
@@ -140,7 +228,7 @@ export function AuthProvider({ children }) {
   const userList = Object.values(USER_CREDENTIALS).map(u => ({ name: u.name, title: u.title }));
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, profileImage, updateProfileImage, userList }}>
+    <AuthContext.Provider value={{ user, login, logout, profileImage, updateProfileImage, userList, presence, changePassword }}>
       {children}
     </AuthContext.Provider>
   );

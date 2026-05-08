@@ -117,16 +117,41 @@ export function useDashboardData() {
       }).filter(row => row.date);
     };
 
+    const getAbsoluteDate = (str) => {
+      if (!str) return null;
+      const parts = str.split("-");
+      if (parts.length < 2) return null;
+      const day = parseInt(parts[0].trim());
+      const monthStr = parts[1].trim();
+      const yearStr = parts[2] ? `20${parts[2].trim()}` : new Date().getFullYear();
+      return new Date(`${monthStr} ${day}, ${yearStr}`);
+    };
+
     const processed = processRows(filteredData);
     const lastSessionRows = extraData?.lastSession || [];
-    const lastSessionProcessed = processRows(lastSessionRows);
+    const lastSessionProcessedFull = processRows(lastSessionRows);
 
-    // Deduplicate last session by email: unique student count + deduplicated revenue (col L)
+    // Filter Last Session data "Till Today" relative to session start
+    const currentSessionDates = processed.map(d => getAbsoluteDate(d.date)).filter(Boolean);
+    const currentSessionStart = currentSessionDates.length > 0 ? new Date(Math.min(...currentSessionDates)) : new Date();
+    const daysInCurrentSession = Math.ceil((new Date() - currentSessionStart) / (1000 * 60 * 60 * 24));
+
+    const lastSessionDates = lastSessionProcessedFull.map(d => getAbsoluteDate(d.date)).filter(Boolean);
+    const lastSessionStart = lastSessionDates.length > 0 ? new Date(Math.min(...lastSessionDates)) : null;
+
+    const lastSessionProcessed = lastSessionProcessedFull.filter(d => {
+      const dDate = getAbsoluteDate(d.date);
+      if (!dDate || !lastSessionStart) return true;
+      const diff = Math.ceil((dDate - lastSessionStart) / (1000 * 60 * 60 * 24));
+      return diff <= daysInCurrentSession;
+    });
+
+    // Deduplicate last session by email (using filtered set)
     const lastSessionEmailMap = {};
     lastSessionProcessed.forEach(d => {
       const key = d.email || `__no_email_${Math.random()}`;
       if (!lastSessionEmailMap[key]) {
-        lastSessionEmailMap[key] = d.revenue; // first entry per email
+        lastSessionEmailMap[key] = d.revenue;
       }
     });
     const lastSessionStudents = Object.keys(lastSessionEmailMap).length;
@@ -380,7 +405,7 @@ export function useDashboardData() {
       if (amount === 0) zeroPaidStudents++;
       if (amount > 0 && centreShareVal === 0 && centre) {
         if (notifs.length < 20) {
-          notifs.push({ text: `Zero Centre Share for student ${name || 'Unknown'} at ${centre}`, ts: notifTimestamp });
+          notifs.push({ id: `share-0-${idx}`, text: `Zero Centre Share for student ${name || 'Unknown'} at ${centre}`, ts: notifTimestamp });
         }
       }
 
@@ -390,7 +415,7 @@ export function useDashboardData() {
     });
 
     if (zeroPaidStudents > 0) {
-      notifs.unshift({ text: `Alert: ${zeroPaidStudents} Zero Paid Student(s) detected.`, ts: notifTimestamp });
+      notifs.unshift({ id: `zero-paid-${zeroPaidStudents}`, text: `Alert: ${zeroPaidStudents} Zero Paid Student(s) detected.`, ts: notifTimestamp });
     }
 
     const last7Days = Array.from({ length: 7 }, (_, i) => {
@@ -405,7 +430,28 @@ export function useDashboardData() {
     const enrolledDates = new Set(validRows.map(r => (r[1] || "").toString().trim()));
     const zeroEnrolmentDays = last7Days.filter(d => !enrolledDates.has(d));
     if (zeroEnrolmentDays.length > 0 && zeroEnrolmentDays.length < 7) {
-      notifs.unshift({ text: `Warning: Zero Enrolment on ${zeroEnrolmentDays.join(', ')}`, ts: notifTimestamp });
+      notifs.unshift({ id: `zero-${zeroEnrolmentDays.join('-')}`, text: `Warning: Zero Enrolment on ${zeroEnrolmentDays.join(', ')}`, ts: notifTimestamp });
+    }
+
+    // Bulk & Trial Alerts
+    const centreDailyCount = {};
+    const trialStudents = [];
+    processed.forEach(d => {
+      if (d.revenue === 0) trialStudents.push(d);
+      const key = `${d.date}_${d.centre}`;
+      centreDailyCount[key] = (centreDailyCount[key] || 0) + 1;
+    });
+
+    Object.keys(centreDailyCount).forEach(key => {
+      if (centreDailyCount[key] >= 10) {
+        const [date, centre] = key.split('_');
+        notifs.unshift({ id: `bulk-${key}`, text: `Bulk Enrolment: ${centreDailyCount[key]} students joined at ${centre} on ${date}`, ts: notifTimestamp });
+      }
+    });
+
+    if (trialStudents.length > 0) {
+      const latestTrial = trialStudents[0];
+      notifs.unshift({ id: `trial-${trialStudents.length}`, text: `Trial Access: ${trialStudents.length} students currently on Trial Access (₹0 Paid).`, ts: notifTimestamp });
     }
 
     const dayMap = {};
