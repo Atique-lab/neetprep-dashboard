@@ -1,6 +1,6 @@
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, 
-  Tooltip, ResponsiveContainer, defs, linearGradient, stop 
+  Tooltip, ResponsiveContainer
 } from 'recharts';
 import { useDashboardData } from "../hooks/useDashboardData";
 
