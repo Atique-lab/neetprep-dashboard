@@ -71,9 +71,19 @@ export default async function handler(req, res) {
         };
       }).filter(r => r.payment_date && r.revenue > 0);
 
-      // Bulk Upsert in chunks of 500 to prevent timeout/payload limits
-      for (let i = 0; i < transformedRows.length; i += 500) {
-        const chunk = transformedRows.slice(i, i + 500);
+      // --- DEDUPLICATION LOGIC ---
+      // PostgreSQL doesn't allow multiple upserts on the same key in one batch.
+      // We use a Map to keep only the last occurrence of each external_id.
+      const uniqueRows = Array.from(
+        transformedRows.reduce((map, row) => {
+          map.set(row.external_id, row);
+          return map;
+        }, new Map()).values()
+      );
+
+      // Bulk Upsert in chunks of 500
+      for (let i = 0; i < uniqueRows.length; i += 500) {
+        const chunk = uniqueRows.slice(i, i + 500);
         const { error } = await supabase
           .from('payments')
           .upsert(chunk, { onConflict: 'external_id' });
@@ -81,7 +91,7 @@ export default async function handler(req, res) {
         if (error) throw error;
       }
       
-      totalAdded += transformedRows.length;
+      totalAdded += uniqueRows.length;
     }
 
     // Log success
