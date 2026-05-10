@@ -10,7 +10,9 @@ import { useDashboardData } from "../hooks/useDashboardData";
 import { generateRevenueReport } from "../utils/reportGenerator";
 
 export default function Dashboard() {
-  const { kpi, insights, monthlyData, dailyComparison, rawData, extraData, loading, error } = useDashboardData();
+  const { kpi, insights, monthlyData, dailyComparison, rawData, extraData: dashboardExtraData, loading, error } = useDashboardData();
+
+  console.log("Dashboard Debug:", { hasExtraData: !!dashboardExtraData, loading, error });
 
   if (error) {
     return (
@@ -100,7 +102,7 @@ export default function Dashboard() {
 
       {/* ── Charts ── */}
       <div className="glass p-6 md:p-8 rounded-[2rem] transition-all hover:shadow-lg hover:shadow-purple-500/5">
-        <RevenueChart monthlyData={monthlyData} rawData={rawData} extraData={extraData} />
+        <RevenueChart monthlyData={monthlyData} rawData={rawData} extraData={dashboardExtraData || {}} />
       </div>
       <div className="glass p-6 md:p-8 rounded-[2rem] transition-all hover:shadow-lg hover:shadow-purple-500/5">
         <DailyComparisonChart
