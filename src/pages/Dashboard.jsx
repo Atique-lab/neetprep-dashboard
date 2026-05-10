@@ -100,7 +100,7 @@ export default function Dashboard() {
 
       {/* ── Charts ── */}
       <div className="glass p-6 md:p-8 rounded-[2rem] transition-all hover:shadow-lg hover:shadow-purple-500/5">
-        <RevenueChart monthlyData={monthlyData} rawData={rawData} />
+        <RevenueChart monthlyData={monthlyData} rawData={rawData} extraData={extraData} />
       </div>
       <div className="glass p-6 md:p-8 rounded-[2rem] transition-all hover:shadow-lg hover:shadow-purple-500/5">
         <DailyComparisonChart

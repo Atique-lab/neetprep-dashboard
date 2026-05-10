@@ -9,7 +9,7 @@ import {
 } from "recharts";
 import { ChevronLeft } from "lucide-react";
 
-export default function RevenueChart({ monthlyData, rawData }) {
+export default function RevenueChart({ monthlyData, rawData, extraData }) {
   const [dailyData, setDailyData] = useState([]);
   const [viewMode, setViewMode] = useState("monthly");
   const [selectedMonth, setSelectedMonth] = useState("");
@@ -27,33 +27,45 @@ export default function RevenueChart({ monthlyData, rawData }) {
     const month = data.activeLabel;
     setSelectedMonth(month);
 
-    // Filter and aggregate daily data from the passed rawData prop
-    const raw = rawData.slice(1).map((row) => ({
+    // Current Session Daily
+    const rawCurrent = rawData.slice(1).map((row) => ({
       date: row[1],
       revenue: parseNumber(row[11]),
     }));
 
-    // Group by day
-    const dayMap = {};
-    raw.forEach((d) => {
+    // Last Session Daily
+    const rawLast = (extraData?.lastSession || []).slice(1).map((row) => ({
+      date: row[1],
+      revenue: parseNumber(row[11]),
+    }));
+
+    // Aggregation maps
+    const currentDayMap = {};
+    const lastDayMap = {};
+
+    rawCurrent.forEach((d) => {
       if (d.date?.includes(month)) {
-        // Extract day number from "D-MMM - YY" format
-        const dayPart = d.date.split("-")[0].trim();
-        const day = parseInt(dayPart, 10);
-        if (!isNaN(day)) {
-          dayMap[day] = (dayMap[day] || 0) + d.revenue;
-        }
+        const day = parseInt(d.date.split("-")[0].trim(), 10);
+        if (!isNaN(day)) currentDayMap[day] = (currentDayMap[day] || 0) + d.revenue;
       }
     });
 
-    // Convert map to sorted array
-    const filtered = Object.keys(dayMap)
-      .map((day) => ({
-        day: parseInt(day),
-        revenue: dayMap[day],
-        displayDay: day.toString()
-      }))
-      .sort((a, b) => a.day - b.day);
+    rawLast.forEach((d) => {
+      if (d.date?.includes(month)) {
+        const day = parseInt(d.date.split("-")[0].trim(), 10);
+        if (!isNaN(day)) lastDayMap[day] = (lastDayMap[day] || 0) + d.revenue;
+      }
+    });
+
+    // Create a unified set of days (1 to 31)
+    const filtered = Array.from({ length: 31 }, (_, i) => {
+      const dayNum = i + 1;
+      return {
+        day: dayNum,
+        revenue: currentDayMap[dayNum] || 0,
+        lastRevenue: lastDayMap[dayNum] || 0,
+      };
+    }).filter(d => d.revenue > 0 || d.lastRevenue > 0);
 
     setDailyData(filtered);
     setViewMode("daily");
@@ -66,10 +78,12 @@ export default function RevenueChart({ monthlyData, rawData }) {
           <h2 className="text-xl font-bold text-slate-800">
             {viewMode === "monthly"
               ? "Revenue Trend"
-              : `${selectedMonth} - Daily Revenue`}
+              : `${selectedMonth} - Daily Comparison`}
           </h2>
           <p className="text-sm text-slate-500 mt-1">
-            {viewMode === "monthly" ? "Click on any month to see daily breakdown" : `Showing daily performance for ${selectedMonth}`}
+            {viewMode === "monthly" 
+              ? "Click on any month to see daily breakdown & comparison" 
+              : `Comparing Daily Performance: Current Session vs Last Session (${selectedMonth})`}
           </p>
         </div>
 
@@ -126,7 +140,7 @@ export default function RevenueChart({ monthlyData, rawData }) {
               formatter={(value, name) => {
                 if (name === 'lastRevenue') return [`₹${value.toLocaleString()}`, 'Last Session'];
                 if (name === 'projectedRevenue') return [`₹${value.toLocaleString()}`, 'Anticipated'];
-                return [`₹${value.toLocaleString()}`, 'Revenue'];
+                return [`₹${value.toLocaleString()}`, 'Current Session'];
               }}
               labelFormatter={(label) => {
                 if (viewMode === 'daily') {
@@ -136,18 +150,16 @@ export default function RevenueChart({ monthlyData, rawData }) {
               }}
             />
 
-            {viewMode === "monthly" && (
-              <Area
-                type="monotone"
-                dataKey="lastRevenue"
-                name="lastRevenue"
-                stroke="#f59e0b"
-                strokeWidth={3}
-                strokeDasharray="5 5"
-                fill="url(#colorLastRevenue)"
-                activeDot={{ r: 5, strokeWidth: 3, stroke: '#fff', fill: '#f59e0b' }}
-              />
-            )}
+            <Area
+              type="monotone"
+              dataKey="lastRevenue"
+              name="lastRevenue"
+              stroke="#f59e0b"
+              strokeWidth={viewMode === "monthly" ? 3 : 2}
+              strokeDasharray={viewMode === "monthly" ? "5 5" : "0"}
+              fill="url(#colorLastRevenue)"
+              activeDot={{ r: 5, strokeWidth: 3, stroke: '#fff', fill: '#f59e0b' }}
+            />
 
             <Area
               type="monotone"
