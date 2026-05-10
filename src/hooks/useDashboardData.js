@@ -400,7 +400,7 @@ export function useDashboardData() {
     const notifTimestamp = new Date().toISOString();
     let zeroPaidStudents = 0;
 
-    validRows.forEach(row => {
+    validRows.forEach((row, idx) => {
       const name = row[2];
       const course = row[7];
       const amount = parseNumber(row[11]);
