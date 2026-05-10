@@ -10,7 +10,7 @@ import { useDashboardData } from "../hooks/useDashboardData";
 import { generateRevenueReport } from "../utils/reportGenerator";
 
 export default function Dashboard() {
-  const { kpi, insights, monthlyData, dailyComparison, rawData, loading, error } = useDashboardData();
+  const { kpi, insights, monthlyData, dailyComparison, rawData, extraData, loading, error } = useDashboardData();
 
   if (error) {
     return (
