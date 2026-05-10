@@ -22,24 +22,38 @@ export default function RevenueChart({ monthlyData, rawData }) {
 
   // 🔥 Handle click
   const handleClick = (data) => {
-    if (!data?.activePayload) return;
+    if (!data?.activePayload || !data.activeLabel) return;
 
-    const month = data.activePayload[0].payload.month;
+    const month = data.activeLabel;
     setSelectedMonth(month);
 
-    // Filter daily data from the passed rawData prop
+    // Filter and aggregate daily data from the passed rawData prop
     const raw = rawData.slice(1).map((row) => ({
       date: row[1],
       revenue: parseNumber(row[11]),
     }));
 
-    const filtered = raw
-      .filter((d) => d.date?.includes(month))
-      .map((d) => ({
-        day: d.date.split(" ")[0], // Simplify date for X axis
-        revenue: d.revenue,
-        fullDate: d.date
-      }));
+    // Group by day
+    const dayMap = {};
+    raw.forEach((d) => {
+      if (d.date?.includes(month)) {
+        // Extract day number from "D-MMM - YY" format
+        const dayPart = d.date.split("-")[0].trim();
+        const day = parseInt(dayPart, 10);
+        if (!isNaN(day)) {
+          dayMap[day] = (dayMap[day] || 0) + d.revenue;
+        }
+      }
+    });
+
+    // Convert map to sorted array
+    const filtered = Object.keys(dayMap)
+      .map((day) => ({
+        day: parseInt(day),
+        revenue: dayMap[day],
+        displayDay: day.toString()
+      }))
+      .sort((a, b) => a.day - b.day);
 
     setDailyData(filtered);
     setViewMode("daily");
@@ -55,16 +69,16 @@ export default function RevenueChart({ monthlyData, rawData }) {
               : `${selectedMonth} - Daily Revenue`}
           </h2>
           <p className="text-sm text-slate-500 mt-1">
-            {viewMode === "monthly" ? "Click on a data point to see daily breakdown" : "Detailed daily view"}
+            {viewMode === "monthly" ? "Click on any month to see daily breakdown" : `Showing daily performance for ${selectedMonth}`}
           </p>
         </div>
 
         {viewMode === "daily" && (
           <button
             onClick={() => setViewMode("monthly")}
-            className="flex items-center gap-1 text-sm font-semibold text-purple-600 bg-purple-50 hover:bg-purple-100 px-4 py-2 rounded-xl transition-colors"
+            className="flex items-center gap-1 text-sm font-semibold text-purple-600 bg-purple-50 hover:bg-purple-100 px-4 py-2 rounded-xl transition-all shadow-sm"
           >
-            <ChevronLeft size={16} /> Back to Monthly
+            <ChevronLeft size={16} /> Back to Monthly View
           </button>
         )}
       </div>
@@ -75,6 +89,7 @@ export default function RevenueChart({ monthlyData, rawData }) {
             data={viewMode === "monthly" ? monthlyData : dailyData}
             onClick={viewMode === "monthly" ? handleClick : null}
             margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+            style={viewMode === "monthly" ? { cursor: "pointer" } : {}}
           >
             <defs>
               <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
@@ -95,6 +110,7 @@ export default function RevenueChart({ monthlyData, rawData }) {
               tickLine={false}
               tick={{ fill: '#64748b', fontSize: 12, fontWeight: 500 }}
               dy={15}
+              interval={viewMode === "monthly" ? 0 : "preserveStartEnd"}
             />
             <Tooltip 
               contentStyle={{ 
@@ -110,11 +126,11 @@ export default function RevenueChart({ monthlyData, rawData }) {
               formatter={(value, name) => {
                 if (name === 'lastRevenue') return [`₹${value.toLocaleString()}`, 'Last Session'];
                 if (name === 'projectedRevenue') return [`₹${value.toLocaleString()}`, 'Anticipated'];
-                return [`₹${value.toLocaleString()}`, 'Current Session'];
+                return [`₹${value.toLocaleString()}`, 'Revenue'];
               }}
-              labelFormatter={(label, payload) => {
-                if (viewMode === 'daily' && payload && payload.length > 0) {
-                  return payload[0].payload.fullDate || label;
+              labelFormatter={(label) => {
+                if (viewMode === 'daily') {
+                  return `${label} ${selectedMonth}`;
                 }
                 return label;
               }}
@@ -130,7 +146,6 @@ export default function RevenueChart({ monthlyData, rawData }) {
                 strokeDasharray="5 5"
                 fill="url(#colorLastRevenue)"
                 activeDot={{ r: 5, strokeWidth: 3, stroke: '#fff', fill: '#f59e0b' }}
-                style={{ cursor: "pointer" }}
               />
             )}
 
@@ -142,7 +157,6 @@ export default function RevenueChart({ monthlyData, rawData }) {
               strokeWidth={4}
               fill="url(#colorRevenue)"
               activeDot={{ r: 6, strokeWidth: 4, stroke: '#fff', fill: '#8b5cf6', className: "shadow-lg" }}
-              style={viewMode === "monthly" ? { cursor: "pointer" } : {}}
             />
 
             {viewMode === "monthly" && (
