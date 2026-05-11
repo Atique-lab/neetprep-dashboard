@@ -8,7 +8,7 @@ import { exportToCSV } from "../utils/exportToCSV";
 import { Link } from "react-router-dom";
 
 export default function Centres() {
-  const { filteredData, extraData, lastSessionComparison, loading, error } = useDashboardData();
+  const { filteredData, deduplicatedData, extraData, lastSessionComparison, loading, error } = useDashboardData();
   const { newCentreShare } = extraData || {};
   const lsCentreMap = lastSessionComparison?.centreMap || {};
 
@@ -25,7 +25,6 @@ export default function Centres() {
     if (newCentreShare && newCentreShare.length > 1) {
         newCentreShare.slice(1).forEach(row => {
             const name = row[0]?.trim();
-            // Assuming we use External Share for the "Share %" display by default
             const shareStr = row[1] || "0";
             const share = parseFloat(shareStr.replace('%', '')) / 100 || 0;
             if (name) map[name] = share;
@@ -37,43 +36,37 @@ export default function Centres() {
   const { centres, kpi } = useMemo(() => {
     if (!filteredData || filteredData.length <= 1) return { centres: [], kpi: {} };
 
-    const processed = filteredData.slice(1).map((row) => ({
-      centre: row[6] || "Unknown",
-      revenue: parseNumber(row[11]),
-      internalExternal: row[12],
-      centreShare: parseNumber(row[17]),
-      neetprepShare: parseNumber(row[20]),
-    })).filter(row => row.centre !== "Unknown");
-
     const centreMap = {};
 
-    processed.forEach((d) => {
-      const name = d.centre.trim();
-      if (!name) return;
+    // 1. Process Revenue from ALL Transactions
+    filteredData.slice(1).forEach((row) => {
+      const name = (row[6] || "Unknown").toString().trim();
+      if (!name || name === "Unknown") return;
 
       if (!centreMap[name]) {
-        centreMap[name] = {
-          name,
-          revenue: 0,
-          students: 0,
-          internal: 0,
-          external: 0,
-          neetprepShare: 0,
-          centreShare: 0,
-        };
+        centreMap[name] = { name, revenue: 0, students: 0, internal: 0, external: 0, neetprepShare: 0, centreShare: 0 };
       }
 
-      centreMap[name].revenue += d.revenue;
-      centreMap[name].students += 1;
-      centreMap[name].neetprepShare += d.neetprepShare;
-      centreMap[name].centreShare += d.centreShare;
-
-      if (d.internalExternal?.toLowerCase()?.includes("internal")) {
-        centreMap[name].internal += 1;
-      } else if (d.internalExternal?.toLowerCase()?.includes("external")) {
-        centreMap[name].external += 1;
-      }
+      centreMap[name].revenue += parseNumber(row[11]);
+      centreMap[name].neetprepShare += parseNumber(row[20]);
+      centreMap[name].centreShare += parseNumber(row[17]);
     });
+
+    // 2. Process Students from DEDUPLICATED Array
+    if (deduplicatedData) {
+      deduplicatedData.forEach((student) => {
+        const name = student.centre;
+        if (!name || name === "Unknown") return;
+
+        if (!centreMap[name]) {
+          centreMap[name] = { name, revenue: 0, students: 0, internal: 0, external: 0, neetprepShare: 0, centreShare: 0 };
+        }
+
+        centreMap[name].students += 1;
+        if (student.isInternal) centreMap[name].internal += 1;
+        else if (student.type === "external") centreMap[name].external += 1;
+      });
+    }
 
     let allCentresKeys = Object.keys(centreMap);
     if (showAllCentres) {

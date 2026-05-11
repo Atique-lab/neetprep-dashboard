@@ -58,6 +58,7 @@ export function useDashboardData() {
     monthlyData: [],
     dailyComparison: [],
     reconciliation: [],
+    deduplicatedData: [],
     // Session comparison data for all pages
     lastSessionComparison: {
       managerMap: {},
@@ -117,6 +118,61 @@ export function useDashboardData() {
       }).filter(row => row.date);
     };
 
+    const processRowsDeduplicated = (rows) => {
+      if (!rows || rows.length <= 1) return [];
+      
+      const studentMap = new Map();
+      
+      rows.slice(1).forEach((row, idx) => {
+        if (!row[1]) return; // Skip empty dates
+        
+        const email = (row[4] || "").toString().trim().toLowerCase();
+        const mobile = (row[3] || "").toString().trim();
+        const admNo = (row[0] || "").toString().trim();
+        const name = (row[2] || "").toString().trim().toLowerCase();
+        
+        // Priority: email > admNo > mobile > name > fallback
+        const key = email || admNo || mobile || name || `unknown-${idx}`;
+        
+        const intExtRaw = (row[12] || "").toString().trim();
+        const isInternalRow = intExtRaw.toLowerCase().includes("internal");
+        
+        if (!studentMap.has(key)) {
+          studentMap.set(key, {
+            date: row[1],
+            email, mobile, admNo, name, key,
+            revenue: 0,
+            centreShare: 0,
+            neetprep: 0,
+            gst: 0,
+            intExt: intExtRaw,
+            isInternal: isInternalRow,
+            manager: (row[21] || "").toString().trim(),
+            centre: (row[6] || "").toString().trim(),
+            course: (row[7] || "").toString().trim(),
+            type: intExtRaw.toLowerCase()
+          });
+        }
+        
+        const student = studentMap.get(key);
+        student.revenue += parseNumber(row[11]);
+        student.centreShare += parseNumber(row[17]);
+        student.neetprep += parseNumber(row[20]);
+        student.gst += parseNumber(row[14]);
+        
+        // APPLY BUSINESS RULE #2: INTERNAL > EXTERNAL
+        if (isInternalRow && !student.isInternal) {
+          student.isInternal = true;
+          student.intExt = "Internal";
+          student.type = "internal";
+          student.manager = (row[21] || "").toString().trim() || student.manager;
+          student.centre = (row[6] || "").toString().trim() || student.centre;
+        }
+      });
+      
+      return Array.from(studentMap.values());
+    };
+
     const getAbsoluteDate = (str) => {
       if (!str) return null;
       const parts = str.split("-");
@@ -128,9 +184,12 @@ export function useDashboardData() {
     };
 
     const processed = processRows(filteredData);
+    const deduplicatedData = processRowsDeduplicated(filteredData);
     const processedFullCurrent = processRows(rawData);
+    
     const lastSessionRows = extraData?.lastSession || [];
     const lastSessionProcessedFull = processRows(lastSessionRows);
+    const lastSessionProcessedFullDeduplicated = processRowsDeduplicated(lastSessionRows);
 
     // Filter Last Session data "Till Today" relative to session start
     // We use rawData (unfiltered) to find the TRUE start of the current session
@@ -148,23 +207,20 @@ export function useDashboardData() {
       return diff <= daysInCurrentSession;
     });
 
-    // TOTAL Last Session (Full Benchmark)
-    const lastSessionEmailMapFull = {};
-    lastSessionProcessedFull.forEach(d => {
-      const key = d.email || `__no_email_${Math.random()}`;
-      if (!lastSessionEmailMapFull[key]) lastSessionEmailMapFull[key] = d.revenue;
+    const lastSessionProcessedDeduplicated = lastSessionProcessedFullDeduplicated.filter(d => {
+      const dDate = getAbsoluteDate(d.date);
+      if (!dDate || !lastSessionStart) return true;
+      const diff = Math.ceil((dDate - lastSessionStart) / (1000 * 60 * 60 * 24));
+      return diff <= daysInCurrentSession;
     });
-    const lastSessionStudentsTotal = Object.keys(lastSessionEmailMapFull).length;
-    const lastSessionRevenueTotal = Object.values(lastSessionEmailMapFull).reduce((s, v) => s + v, 0);
+
+    // TOTAL Last Session (Full Benchmark)
+    const lastSessionStudentsTotal = lastSessionProcessedFullDeduplicated.length;
+    const lastSessionRevenueTotal = lastSessionProcessedFull.reduce((s, v) => s + v.revenue, 0);
 
     // TILL TODAY Last Session (Relative Comparison)
-    const lastSessionEmailMapTillToday = {};
-    lastSessionProcessed.forEach(d => {
-      const key = d.email || `__no_email_${Math.random()}`;
-      if (!lastSessionEmailMapTillToday[key]) lastSessionEmailMapTillToday[key] = d.revenue;
-    });
-    const lastSessionStudentsTillToday = Object.keys(lastSessionEmailMapTillToday).length;
-    const lastSessionRevenueTillToday = Object.values(lastSessionEmailMapTillToday).reduce((s, v) => s + v, 0);
+    const lastSessionStudentsTillToday = lastSessionProcessedDeduplicated.length;
+    const lastSessionRevenueTillToday = lastSessionProcessed.reduce((s, v) => s + v.revenue, 0);
 
     // ═══════════════════════════════════════════
     // BUILD LAST SESSION COMPARISON DATA
@@ -178,12 +234,13 @@ export function useDashboardData() {
     // Last Session — Manager Map
     const lsManagerMap = {};
     const lsMonthlyByManager = {};
+    
+    // Revenue logic uses ALL transactions
     lastSessionProcessed.forEach(d => {
       const mgr = d.manager || "Unassigned";
       if (mgr === "Unassigned" || !mgr) return;
       if (!lsManagerMap[mgr]) lsManagerMap[mgr] = { revenue: 0, students: 0, centresSet: new Set() };
       lsManagerMap[mgr].revenue += d.neetprep;
-      lsManagerMap[mgr].students += 1;
       lsManagerMap[mgr].centresSet.add(d.centre);
 
       const month = getMonth(d.date);
@@ -192,27 +249,44 @@ export function useDashboardData() {
         lsMonthlyByManager[mgr][month] = (lsMonthlyByManager[mgr][month] || 0) + d.neetprep;
       }
     });
+    
+    // Student logic uses DEDUPLICATED data
+    lastSessionProcessedDeduplicated.forEach(d => {
+      const mgr = d.manager || "Unassigned";
+      if (mgr === "Unassigned" || !mgr) return;
+      if (!lsManagerMap[mgr]) lsManagerMap[mgr] = { revenue: 0, students: 0, centresSet: new Set() };
+      lsManagerMap[mgr].students += 1;
+    });
 
     // Last Session — Centre Map
     const lsCentreMap = {};
     const lsMonthlyByCentre = {};
+    
+    // Revenue logic uses ALL transactions
     lastSessionProcessed.forEach(d => {
       const ctr = d.centre || "Unknown";
       if (ctr === "Unknown") return;
       if (!lsCentreMap[ctr]) lsCentreMap[ctr] = { revenue: 0, students: 0, internal: 0, external: 0, neetprep: 0, centreShare: 0, printingCost: 0 };
       lsCentreMap[ctr].revenue += d.revenue;
-      lsCentreMap[ctr].students += 1;
       lsCentreMap[ctr].neetprep += d.neetprep;
       lsCentreMap[ctr].centreShare += d.centreShare;
       lsCentreMap[ctr].printingCost += d.printingCost;
-      if (d.intExt.toLowerCase().includes("internal")) lsCentreMap[ctr].internal += 1;
-      else if (d.intExt.toLowerCase().includes("external")) lsCentreMap[ctr].external += 1;
 
       const month = getMonth(d.date);
       if (month) {
         if (!lsMonthlyByCentre[ctr]) lsMonthlyByCentre[ctr] = {};
         lsMonthlyByCentre[ctr][month] = (lsMonthlyByCentre[ctr][month] || 0) + d.revenue;
       }
+    });
+
+    // Student logic uses DEDUPLICATED data
+    lastSessionProcessedDeduplicated.forEach(d => {
+      const ctr = d.centre || "Unknown";
+      if (ctr === "Unknown") return;
+      if (!lsCentreMap[ctr]) lsCentreMap[ctr] = { revenue: 0, students: 0, internal: 0, external: 0, neetprep: 0, centreShare: 0, printingCost: 0 };
+      lsCentreMap[ctr].students += 1;
+      if (d.type.includes("internal")) lsCentreMap[ctr].internal += 1;
+      else if (d.type.includes("external")) lsCentreMap[ctr].external += 1;
     });
 
     // Last Session — Revenue Breakdown
@@ -321,9 +395,8 @@ export function useDashboardData() {
       monthlyGrowth = ((currentRevenue - prevRevenue) / prevRevenue) * 100;
     }
 
-    // Deduplicate current session by email for fair enrolment growth comparison
-    const currentUniqueEmails = new Set(processed.map(d => d.email).filter(Boolean));
-    const currentUniqueCount = currentUniqueEmails.size || processed.length;
+    // Deduplicate current session by email (with fallback) for fair enrolment growth comparison
+    const currentUniqueCount = deduplicatedData.length;
     const enrolmentGrowth = lastSessionStudentsTillToday > 0
       ? (((currentUniqueCount - lastSessionStudentsTillToday) / lastSessionStudentsTillToday) * 100)
       : 0;
@@ -372,21 +445,29 @@ export function useDashboardData() {
 
     let yesterdayExternal = 0;
     let yesterdayInternal = 0;
+    
+    // We use deduplicated data for accurate daily unique student counting
+    deduplicatedData.forEach(student => {
+      if ((student.date || "").toString().trim() === yesterdayLabel.trim()) {
+        if (student.type === "external") yesterdayExternal++;
+        else if (student.type === "internal") yesterdayInternal++;
+      }
+    });
+    
+    // Extra insight: how many external payments were made to NEETprep vs Centre yesterday
+    // This MUST use transactions, not deduplicated students
     let yesterdayExtPaidNeetprep = 0;
     let yesterdayExtPaidCentre = 0;
     const validRows = filteredData.slice(1).filter(r => r[1]);
-
     validRows.forEach(row => {
       if ((row[1] || "").toString().trim() === yesterdayLabel.trim()) {
         const type = (row[12] || "").toString().trim().toLowerCase();
         const paidTo = (row[13] || "").toString().trim().toLowerCase();
         
         if (type === "external") {
-          yesterdayExternal++;
           if (paidTo.includes("neetprep")) yesterdayExtPaidNeetprep++;
           else if (paidTo.includes("centre") || paidTo.includes("center")) yesterdayExtPaidCentre++;
         }
-        else if (type === "internal") yesterdayInternal++;
       }
     });
 
@@ -480,7 +561,7 @@ export function useDashboardData() {
 
     setData({
       kpi: {
-        students: processed.length,
+        students: deduplicatedData.length,
         currentMonthRev: currentRevenue,
         lastMonthRev: lastMonthRevFull,
         monthlyGrowth,
@@ -531,6 +612,7 @@ export function useDashboardData() {
         });
         return issues;
       })(),
+      deduplicatedData,
     });
   }, [filteredData, extraData, loading, error]);
 

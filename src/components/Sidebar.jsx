@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, IndianRupee, Users, School, CreditCard, GraduationCap, ShieldCheck } from "lucide-react";
+import { LayoutDashboard, IndianRupee, Users, School, CreditCard, GraduationCap, ShieldCheck, Activity } from "lucide-react";
 
 export default function Sidebar() {
   const location = useLocation();
@@ -11,6 +11,7 @@ export default function Sidebar() {
     { name: "Centres", path: "/centres", icon: <School size={20} /> },
     { name: "Payments", path: "/payments", icon: <CreditCard size={20} /> },
     { name: "Students", path: "/students", icon: <GraduationCap size={20} /> },
+    { name: "Enrolments", path: "/enrolments", icon: <Activity size={20} /> },
     { name: "Audit", path: "/audit", icon: <ShieldCheck size={20} /> },
   ];
 

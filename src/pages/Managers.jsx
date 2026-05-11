@@ -26,7 +26,7 @@ const GrowthBadge = ({ current, last }) => {
 };
 
 export default function Managers() {
-  const { filteredData, lastSessionComparison, loading, error } = useDashboardData();
+  const { filteredData, deduplicatedData, lastSessionComparison, loading, error } = useDashboardData();
   const lsManagerMap = lastSessionComparison?.managerMap || {};
 
   const parseNumber = (val) => {
@@ -38,22 +38,29 @@ export default function Managers() {
   const { managers, kpi } = useMemo(() => {
     if (!filteredData || filteredData.length <= 1) return { managers: [], kpi: {} };
 
-    const processed = filteredData.slice(1).map((row) => ({
-      manager: row[21] || "Unassigned",
-      revenue: parseNumber(row[20]),
-      students: 1,
-      centre: row[6] || "Unknown",
-    })).filter(row => row.manager !== "Unassigned");
-
     const managerMap = {};
-    processed.forEach((d) => {
-      const name = d.manager.trim();
-      if (!name) return;
+
+    // 1. Process Revenue from ALL Transactions
+    filteredData.slice(1).forEach((row) => {
+      const name = (row[21] || "Unassigned").toString().trim();
+      const centre = (row[6] || "Unknown").toString().trim();
+      if (!name || name === "Unassigned") return;
+
       if (!managerMap[name]) managerMap[name] = { name, revenue: 0, students: 0, centresSet: new Set() };
-      managerMap[name].revenue += d.revenue;
-      managerMap[name].students += 1;
-      managerMap[name].centresSet.add(d.centre);
+      managerMap[name].revenue += parseNumber(row[20]); // NEETprep share is manager revenue
+      managerMap[name].centresSet.add(centre);
     });
+
+    // 2. Process Students from DEDUPLICATED Array
+    if (deduplicatedData) {
+      deduplicatedData.forEach((student) => {
+        const name = student.manager;
+        if (!name || name === "Unassigned") return;
+
+        if (!managerMap[name]) managerMap[name] = { name, revenue: 0, students: 0, centresSet: new Set() };
+        managerMap[name].students += 1;
+      });
+    }
 
     const managerData = Object.values(managerMap).map(m => ({
       ...m,
