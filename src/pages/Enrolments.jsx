@@ -28,7 +28,17 @@ export default function Enrolments() {
       const day = parseInt(parts[0].trim());
       const monthStr = parts[1].trim();
       const yearStr = parts[2] ? `20${parts[2].trim()}` : new Date().getFullYear();
-      return new Date(`${monthStr} ${day}, ${yearStr}`);
+      const parsed = new Date(`${monthStr} ${day}, ${yearStr}`);
+      return isNaN(parsed.getTime()) ? null : parsed;
+    };
+
+    const getValidStart = (dates) => {
+      if (!dates || dates.length === 0) return null;
+      const sorted = [...dates].sort((a, b) => a - b);
+      const median = sorted[Math.floor(sorted.length / 2)];
+      const oneYearBefore = new Date(median);
+      oneYearBefore.setFullYear(median.getFullYear() - 1);
+      return sorted.find(d => d >= oneYearBefore) || sorted[0];
     };
 
     const processRows = (rows) => {
@@ -54,11 +64,11 @@ export default function Enrolments() {
 
     // Filter Last Session Till Today
     const currentDates = processRows(rawData).map(d => getAbsoluteDate(d.date)).filter(Boolean);
-    const currentStart = currentDates.length > 0 ? new Date(Math.min(...currentDates)) : new Date();
+    const currentStart = getValidStart(currentDates) || new Date();
     const daysInCurrentSession = Math.ceil((new Date() - currentStart) / (1000 * 60 * 60 * 24));
 
     const lsDates = lastSessionData.map(d => getAbsoluteDate(d.date)).filter(Boolean);
-    const lsStart = lsDates.length > 0 ? new Date(Math.min(...lsDates)) : null;
+    const lsStart = getValidStart(lsDates);
 
     const lsTillTodayData = lastSessionData.filter(d => {
       const dDate = getAbsoluteDate(d.date);
@@ -179,16 +189,30 @@ export default function Enrolments() {
     {
       title: "Total Enrolments (Current)",
       value: stats.currentTotal.toLocaleString(),
-      subtext: `vs ${stats.lastSessionTotal.toLocaleString()} (Last Session Till Today)`,
+      subtext: `Current Session`,
       trend: stats.sessionGrowth,
       icon: <Users size={24} className="text-purple-500" />
     },
     {
-      title: `This Month (${stats.currentMonthName})`,
+      title: "Enrolments Till Now Last session",
+      value: stats.lastSessionTotal.toLocaleString(),
+      subtext: `Matched Duration`,
+      trend: null,
+      icon: <Users size={24} className="text-slate-500" />
+    },
+    {
+      title: "This Month Enrolments",
       value: stats.thisMonthCount.toLocaleString(),
-      subtext: `vs ${stats.lastMonthCount.toLocaleString()} (${stats.prevMonthName} Till Today)`,
+      subtext: `(${stats.currentMonthName})`,
       trend: stats.monthlyGrowth,
       icon: <Calendar size={24} className="text-indigo-500" />
+    },
+    {
+      title: "Last Month Enrolments",
+      value: stats.lastMonthCount.toLocaleString(),
+      subtext: `(${stats.prevMonthName} Till Today)`,
+      trend: null,
+      icon: <Calendar size={24} className="text-slate-500" />
     }
   ];
 
@@ -203,7 +227,7 @@ export default function Enrolments() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {cards.map((card, idx) => (
           <motion.div
             key={idx}
@@ -216,10 +240,12 @@ export default function Enrolments() {
               <div className="p-3 bg-white/50 dark:bg-slate-800/50 rounded-2xl shadow-sm">
                 {card.icon}
               </div>
-              <div className={`flex items-center gap-1 text-sm font-medium px-2.5 py-1 rounded-full ${card.trend >= 0 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400' : 'bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-400'}`}>
-                {card.trend >= 0 ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
-                {Math.abs(card.trend).toFixed(1)}%
-              </div>
+              {card.trend != null && (
+                <div className={`flex items-center gap-1 text-sm font-medium px-2.5 py-1 rounded-full ${card.trend >= 0 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400' : 'bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-400'}`}>
+                  {card.trend >= 0 ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
+                  {Math.abs(card.trend).toFixed(1)}%
+                </div>
+              )}
             </div>
             <div className="space-y-1">
               <h3 className="text-slate-500 dark:text-slate-400 font-medium text-sm">{card.title}</h3>

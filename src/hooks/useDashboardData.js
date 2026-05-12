@@ -180,7 +180,18 @@ export function useDashboardData() {
       const day = parseInt(parts[0].trim());
       const monthStr = parts[1].trim();
       const yearStr = parts[2] ? `20${parts[2].trim()}` : new Date().getFullYear();
-      return new Date(`${monthStr} ${day}, ${yearStr}`);
+      const parsed = new Date(`${monthStr} ${day}, ${yearStr}`);
+      return isNaN(parsed.getTime()) ? null : parsed;
+    };
+
+    const getValidStart = (dates) => {
+      if (!dates || dates.length === 0) return null;
+      const sorted = [...dates].sort((a, b) => a - b);
+      // Remove extreme outliers (like 1999) by checking against median
+      const median = sorted[Math.floor(sorted.length / 2)];
+      const oneYearBefore = new Date(median);
+      oneYearBefore.setFullYear(median.getFullYear() - 1);
+      return sorted.find(d => d >= oneYearBefore) || sorted[0];
     };
 
     const processed = processRows(filteredData);
@@ -194,11 +205,13 @@ export function useDashboardData() {
     // Filter Last Session data "Till Today" relative to session start
     // We use rawData (unfiltered) to find the TRUE start of the current session
     const currentSessionDates = processedFullCurrent.map(d => getAbsoluteDate(d.date)).filter(Boolean);
-    const currentSessionStart = currentSessionDates.length > 0 ? new Date(Math.min(...currentSessionDates)) : new Date();
+    const currentSessionStart = getValidStart(currentSessionDates) || new Date();
+    
+    // We compare from session start to TODAY exactly
     const daysInCurrentSession = Math.ceil((new Date() - currentSessionStart) / (1000 * 60 * 60 * 24));
 
     const lastSessionDates = lastSessionProcessedFull.map(d => getAbsoluteDate(d.date)).filter(Boolean);
-    const lastSessionStart = lastSessionDates.length > 0 ? new Date(Math.min(...lastSessionDates)) : null;
+    const lastSessionStart = getValidStart(lastSessionDates);
 
     const lastSessionProcessed = lastSessionProcessedFull.filter(d => {
       const dDate = getAbsoluteDate(d.date);
