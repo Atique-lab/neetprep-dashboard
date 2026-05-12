@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useDashboardData } from "../hooks/useDashboardData";
 import { AlertCircle, ArrowLeft, Users, Wallet, CreditCard } from "lucide-react";
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import { AreaChart, Area, BarChart, Bar, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
 export default function CentreDetail() {
   const { id } = useParams();
@@ -63,24 +63,42 @@ export default function CentreDetail() {
     let totalGross = 0;
     let neetprepShare = 0;
     let centreShare = 0;
-    let internal = 0;
-    let external = 0;
+
     const studentsList = [];
     const dailyDataMap = {};
+    const monthlyMap = {}; // monthly revenue
+    const currentMonthlyEnrolments = {}; // monthly students
+    const studentDeduplicationMap = new Map();
 
     rows.forEach(row => {
       const gross = parseNumber(row[11]);
       const nShare = parseNumber(row[20]);
       const cShare = parseNumber(row[17]);
-      const intExt = row[12] || "";
       const dateStr = row[1];
+      const monthStr = dateStr ? dateStr.split("-")[1]?.trim() : null;
 
       totalGross += gross;
       neetprepShare += nShare;
       centreShare += cShare;
-      
-      if (intExt.toLowerCase().includes("internal")) internal++;
-      else if (intExt.toLowerCase().includes("external")) external++;
+
+      // For deduplication
+      const email = (row[4] || "").toString().trim().toLowerCase();
+      const mobile = (row[3] || "").toString().trim();
+      const name = (row[2] || "Unknown").toString().trim().toLowerCase();
+      const admNo = (row[0] || "").toString().trim();
+      const key = email || admNo || mobile || name;
+
+      if (!studentDeduplicationMap.has(key)) {
+        studentDeduplicationMap.set(key, {
+           intExt: row[12] || "",
+           month: monthStr
+        });
+      } else {
+        // Business rule: Internal > External
+        if ((row[12] || "").toLowerCase().includes("internal")) {
+           studentDeduplicationMap.get(key).intExt = row[12];
+        }
+      }
 
       studentsList.push({
         date: dateStr || "-",
@@ -95,6 +113,23 @@ export default function CentreDetail() {
         dailyDataMap[dateStr].revenue += gross;
         dailyDataMap[dateStr].count += 1;
       }
+      
+      if (monthStr) {
+         monthlyMap[monthStr] = (monthlyMap[monthStr] || 0) + gross;
+      }
+    });
+
+    // Process unique students
+    let internal = 0;
+    let external = 0;
+    const uniqueStudents = Array.from(studentDeduplicationMap.values());
+    uniqueStudents.forEach(s => {
+       if (s.intExt.toLowerCase().includes("internal")) internal++;
+       else if (s.intExt.toLowerCase().includes("external")) external++;
+
+       if (s.month) {
+          currentMonthlyEnrolments[s.month] = (currentMonthlyEnrolments[s.month] || 0) + 1;
+       }
     });
 
     const dailyRevenue = Object.values(dailyDataMap).sort((a,b) => {
@@ -103,7 +138,18 @@ export default function CentreDetail() {
       return dA - dB;
     });
 
-    const studentsCount = studentsList.length;
+    const monthsOrder = ["Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan", "Feb"];
+    const lsMonthlyStudents = lastSessionComparison?.monthlyStudentsByCentre?.[decodedName] || {};
+    
+    const enrolmentTrendData = monthsOrder
+      .filter(m => currentMonthlyEnrolments[m] !== undefined || lsMonthlyStudents[m] !== undefined)
+      .map(m => ({
+         month: m,
+         currentEnrolments: currentMonthlyEnrolments[m] || 0,
+         lastEnrolments: lsMonthlyStudents[m] || 0
+      }));
+
+    const studentsCount = uniqueStudents.length;
     const studentGrowth = lastYearStudents > 0 ? ((studentsCount - lastYearStudents) / lastYearStudents) * 100 : 0;
     const revenueGrowth = lastYearRevenue > 0 ? ((totalGross - lastYearRevenue) / lastYearRevenue) * 100 : 0;
 
@@ -131,7 +177,8 @@ export default function CentreDetail() {
       lastYearRevenue,
       lastYearNeetprep,
       studentGrowth,
-      revenueGrowth
+      revenueGrowth,
+      enrolmentTrendData
     };
   }, [filteredData, extraData, decodedName]);
 
@@ -248,6 +295,26 @@ export default function CentreDetail() {
               />
               <Area type="monotone" dataKey="revenue" stroke="#8b5cf6" strokeWidth={3} fillOpacity={1} fill="url(#colorRev)" />
             </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+
+      {/* Enrolments Trend Chart (Current vs Last Session) */}
+      {centreData.enrolmentTrendData.length > 0 && (
+        <div className="glass p-6 md:p-8 rounded-[2rem] mb-8">
+          <h2 className="text-xl font-bold mb-6 text-slate-800">Monthly Enrolments (Current vs Last Year)</h2>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={centreData.enrolmentTrendData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+              <XAxis dataKey="month" tick={{fill: '#64748b', fontSize: 12, fontWeight: 500}} axisLine={false} tickLine={false} />
+              <YAxis tick={{fill: '#64748b', fontSize: 12, fontWeight: 500}} axisLine={false} tickLine={false} />
+              <Tooltip 
+                 contentStyle={{ borderRadius: '16px', border: '1px solid rgba(255,255,255,0.4)', background: 'rgba(255, 255, 255, 0.8)', backdropFilter: 'blur(12px)'}}
+                 itemStyle={{ color: '#1e293b', fontWeight: 600 }}
+              />
+              <Bar dataKey="lastEnrolments" name="Last Session" fill="#cbd5e1" radius={[4, 4, 0, 0]} barSize={20} />
+              <Bar dataKey="currentEnrolments" name="Current Session" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={20} />
+            </BarChart>
           </ResponsiveContainer>
         </div>
       )}

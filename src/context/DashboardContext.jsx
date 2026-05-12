@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { fetchSheetData, fetchNewCentreShare, fetchLastSessionEnrolments } from '../services/sheetApi';
+import { useDashboardComputed } from '../hooks/useDashboardComputed';
 
 const DashboardContext = createContext();
 
@@ -84,11 +85,14 @@ export function DashboardProvider({ children }) {
     return [header, ...filtered];
   }, [rawData, dateRange]);
 
+  const dashboardComputedData = useDashboardComputed(filteredData, rawData, extraData, loading, error);
+
   return (
     <DashboardContext.Provider value={{
       rawData,
       filteredData,
       extraData,
+      dashboardComputedData,
       loading,
       isRefreshing,
       error,
