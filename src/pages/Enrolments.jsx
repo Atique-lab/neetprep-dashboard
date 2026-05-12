@@ -65,7 +65,10 @@ export default function Enrolments() {
     // Filter Last Session Till Today
     const currentDates = processRows(rawData).map(d => getAbsoluteDate(d.date)).filter(Boolean);
     const currentStart = getValidStart(currentDates) || new Date();
-    const daysInCurrentSession = Math.ceil((new Date() - currentStart) / (1000 * 60 * 60 * 24));
+    
+    const nowObj = new Date();
+    const oneYearAgo = new Date(nowObj);
+    oneYearAgo.setFullYear(nowObj.getFullYear() - 1);
 
     const lsDates = lastSessionData.map(d => getAbsoluteDate(d.date)).filter(Boolean);
     const lsStart = getValidStart(lsDates);
@@ -73,8 +76,8 @@ export default function Enrolments() {
     const lsTillTodayData = lastSessionData.filter(d => {
       const dDate = getAbsoluteDate(d.date);
       if (!dDate || !lsStart) return true;
-      const diff = Math.ceil((dDate - lsStart) / (1000 * 60 * 60 * 24));
-      return diff <= daysInCurrentSession;
+      // Filter exactly up to this calendar day last year
+      return dDate >= lsStart && dDate <= oneYearAgo;
     });
 
     const lastSessionTotal = getUniqueCount(lsTillTodayData);

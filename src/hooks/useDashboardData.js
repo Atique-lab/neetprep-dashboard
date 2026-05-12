@@ -207,8 +207,9 @@ export function useDashboardData() {
     const currentSessionDates = processedFullCurrent.map(d => getAbsoluteDate(d.date)).filter(Boolean);
     const currentSessionStart = getValidStart(currentSessionDates) || new Date();
     
-    // We compare from session start to TODAY exactly
-    const daysInCurrentSession = Math.ceil((new Date() - currentSessionStart) / (1000 * 60 * 60 * 24));
+    const todayObj = new Date();
+    const oneYearAgo = new Date(todayObj);
+    oneYearAgo.setFullYear(todayObj.getFullYear() - 1);
 
     const lastSessionDates = lastSessionProcessedFull.map(d => getAbsoluteDate(d.date)).filter(Boolean);
     const lastSessionStart = getValidStart(lastSessionDates);
@@ -216,15 +217,14 @@ export function useDashboardData() {
     const lastSessionProcessed = lastSessionProcessedFull.filter(d => {
       const dDate = getAbsoluteDate(d.date);
       if (!dDate || !lastSessionStart) return true;
-      const diff = Math.ceil((dDate - lastSessionStart) / (1000 * 60 * 60 * 24));
-      return diff <= daysInCurrentSession;
+      // Filter exactly up to this calendar day last year
+      return dDate >= lastSessionStart && dDate <= oneYearAgo;
     });
 
     const lastSessionProcessedDeduplicated = lastSessionProcessedFullDeduplicated.filter(d => {
       const dDate = getAbsoluteDate(d.date);
       if (!dDate || !lastSessionStart) return true;
-      const diff = Math.ceil((dDate - lastSessionStart) / (1000 * 60 * 60 * 24));
-      return diff <= daysInCurrentSession;
+      return dDate >= lastSessionStart && dDate <= oneYearAgo;
     });
 
     // TOTAL Last Session (Full Benchmark)
