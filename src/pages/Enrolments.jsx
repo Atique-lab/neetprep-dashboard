@@ -94,8 +94,14 @@ export default function Enrolments() {
     });
 
     lastSessionData.forEach(d => {
-      const month = getMonth(d.date);
-      if (!month) return;
+      const dateObj = getAbsoluteDate(d.date);
+      if (!dateObj) return;
+      
+      const year = dateObj.getFullYear();
+      const mIdx = dateObj.getMonth();
+      if (year >= 2026 && mIdx >= 2) return; // Exclude Mar 2026 onwards
+
+      const month = dateObj.toLocaleString("default", { month: "short" });
       if (!lastSessionMonthMap[month]) lastSessionMonthMap[month] = new Set();
       lastSessionMonthMap[month].add(d.key);
     });
@@ -151,10 +157,17 @@ export default function Enrolments() {
     });
 
     lastSessionData.forEach(d => {
-      const month = getMonth(d.date);
+      const dateObj = getAbsoluteDate(d.date);
+      if (!dateObj) return;
+
+      const year = dateObj.getFullYear();
+      const mIdx = dateObj.getMonth();
+      if (year >= 2026 && mIdx >= 2) return; // Exclude Mar 2026 onwards
+
+      const month = dateObj.toLocaleString("default", { month: "short" });
       // We compare current month name with the same month from last session
       if (month === currentMonthName) {
-        const day = parseInt(d.date.split("-")[0], 10);
+        const day = dateObj.getDate();
         if (!isNaN(day) && day >= 1 && day <= 31) {
           dailyComparison[day - 1].lastSessionMonth.add(d.key);
         }

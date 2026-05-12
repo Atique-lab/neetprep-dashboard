@@ -350,8 +350,14 @@ export function useDashboardData() {
     });
 
     lastSessionProcessedFull.forEach((d) => {
-      const month = getMonth(d.date);
-      if (!month) return;
+      const dateObj = getAbsoluteDate(d.date);
+      if (!dateObj) return;
+
+      const year = dateObj.getFullYear();
+      const mIdx = dateObj.getMonth();
+      if (year >= 2026 && mIdx >= 2) return; // Exclude Mar 2026 onwards
+
+      const month = dateObj.toLocaleString("default", { month: "short" });
       if (!lastMonthlyMap[month]) lastMonthlyMap[month] = 0;
       lastMonthlyMap[month] += d.revenue;
     });
